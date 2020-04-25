@@ -17,13 +17,10 @@ export type CityType = { id: string; plateNumber: number; name: string; path: st
 export type CustomStyleType = { idleColor: string, hoverColor: string };
 export type ViewBoxType = { top: number; left: number; width: number; height: number };
 
-export default class TurkeyMap extends Component<IProps, { hovered: boolean }> {
+export default class TurkeyMap extends Component<IProps> {
 
     constructor(props: IProps) {
         super(props);
-        this.state = {
-            hovered: false
-        }
     }
 
     static defaultProps: IProps = {
@@ -83,7 +80,7 @@ export default class TurkeyMap extends Component<IProps, { hovered: boolean }> {
                 onMouseOver={event => this.props.hoverable ? this.onHover(event) : undefined}
                 onClick={this.onClick}
             >
-                <path style={{ cursor: "pointer" }} d={city.path} />
+                <path style={{ cursor: "pointer", fill: this.props.customStyle.idleColor }} d={city.path} />
             </g >);
             let cityType: CityType = { id: city.id, name: city.name, path: city.path, plateNumber: city.plateNumber }
             return { element, cityType }
