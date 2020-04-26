@@ -28,17 +28,28 @@ import TurkeyMap from 'turkey-map-react';
 ```
 
 ### Handling events
+On click example:
 ```
 <TurkeyMap 
-    onClick={ ({ plateNumber, cityName}) => console.log(plateNumber + " - " + cityName + " is just clicked!") } 
+    onClick={ ({ plateNumber, cityName }) => console.log(plateNumber + " - " + cityName + " is just clicked!") } 
 />
 ```
 
-### City component wrapping
+On mouse over example:
 ```
 <TurkeyMap 
-    hoverable={false} 
-    cityWrapper={ (child) => <Tooltip> {child} </Tooltip> } 
+    hoverable={true}
+    onHover={ ({ plateNumber, cityName }) => console.log("Cursor is over on " + plateNumber + " - " + cityName + "!") } 
+/>
+```
+### City component wrapping
+```
+<TurkeyMap
+    cityWrapper={(cityComponent, cityData) => ( 
+        <Tooltip title={cityData.name} key={cityData.id}> 
+            {cityComponent} 
+        </ Tooltip> 
+    )}
 />
 ```
 This is generally used for [Antd](https://ant.design/components/tooltip/) style *Tooltip*. 

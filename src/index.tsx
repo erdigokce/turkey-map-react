@@ -32,7 +32,7 @@ export default class TurkeyMap extends Component<IProps> {
     }
 
     cityWrapper = () => {
-        return this.getCities().map(param => this.props.cityWrapper ? this.props.cityWrapper(param.element, param.cityType) : param);
+        return this.getCities().map(param => this.props.cityWrapper ? this.props.cityWrapper(param.element, param.cityType) : param.element);
     }
 
     onHover = (event: React.MouseEvent<SVGGElement, MouseEvent>): void => {
@@ -77,7 +77,7 @@ export default class TurkeyMap extends Component<IProps> {
                 data-iladi={city.name}
                 onMouseEnter={this.onMouseEnter}
                 onMouseLeave={this.onMouseLeave}
-                onMouseOver={event => this.props.hoverable ? this.onHover(event) : undefined}
+                onMouseOver={event => this.props.hoverable && this.onHover ? this.onHover(event) : undefined}
                 onClick={this.onClick}
             >
                 <path style={{ cursor: "pointer", fill: this.props.customStyle.idleColor }} d={city.path} />
