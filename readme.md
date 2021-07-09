@@ -31,7 +31,7 @@ import TurkeyMap from 'turkey-map-react';
 On click example:
 ```
 <TurkeyMap 
-    onClick={ ({ plateNumber, cityName }) => console.log(plateNumber + " - " + cityName + " is just clicked!") } 
+    onClick={ ({ plateNumber, name }) => console.log(plateNumber + " - " + name + " is just clicked!") } 
 />
 ```
 
@@ -39,7 +39,7 @@ On mouse over example:
 ```
 <TurkeyMap 
     hoverable={true}
-    onHover={ ({ plateNumber, cityName }) => console.log("Cursor is over on " + plateNumber + " - " + cityName + "!") } 
+    onHover={ ({ plateNumber, name }) => console.log("Cursor is over on " + plateNumber + " - " + name + "!") } 
 />
 ```
 ### City component wrapping
