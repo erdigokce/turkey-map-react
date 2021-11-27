@@ -4,7 +4,7 @@
   "description": "An interactive SVG turkey map for React JS applications.",
   "main": "./lib/index.js",
   "scripts": {
-    "build": "rm -rf ./lib && ./node_modules/.bin/tsc",
+    "build": "rm -rf ./lib && ./node_modules/.bin/tsc && cp ./src/*.css ./lib",
     "prepare": "yarn build"
   },
   "repository": {

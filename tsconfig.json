@@ -1,13 +1,16 @@
 {
   "compilerOptions": {
     "outDir": "./lib",
+    "module": "es6",
     "target": "es5",
-    "module": "commonjs",
+    "allowJs": true,
+    "moduleResolution": "node",
     "noImplicitAny": true,
     "strictNullChecks": true,
     "removeComments": true,
     "declaration": true,
     "sourceMap": true,
+    "allowSyntheticDefaultImports": true,
     "jsx": "react",
     "typeRoots": [
       "index.d.ts",
@@ -15,9 +18,7 @@
     ]
   },
   "include": [
-    "./src/**/*.tsx",
-    "./src/**/*.ts",
-    "./src/**/*.css"
+    "src"
   ],
   "exclude": [
     "node_modules"
