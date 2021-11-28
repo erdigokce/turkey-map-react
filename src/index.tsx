@@ -6,6 +6,7 @@ import { cities } from './data';
 
 type Data = {
   cities: CityType[],
+  counties?: CountyType[],
 }
 
 interface IProps {
@@ -26,6 +27,7 @@ interface IState {
   tooltipStyle: { left: number, top: number, visibility?: Property.Visibility, animation?: Property.Animation }
 }
 
+export type CountyType = { id: number, countyName: string, cityId: number, priority: 0, path: string, subregions: string };
 export type CityType = { id: string; plateNumber: number; name: string; path: string };
 export type CustomStyleType = { idleColor: string, hoverColor: string };
 export type ViewBoxType = { top: number; left: number; width: number; height: number };
