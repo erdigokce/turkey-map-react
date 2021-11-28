@@ -2,11 +2,10 @@ import React, { Component, MouseEventHandler } from 'react';
 import Tooltip from './Tooltip';
 import styles from './Tooltip.css';
 import { Property } from 'csstype';
-import { cities, counties } from './data';
+import { cities } from './data';
 
 type Data = {
-  cities: typeof cities,
-  counties: typeof counties,
+  cities: CityType[],
 }
 
 interface IProps {
@@ -45,7 +44,7 @@ export default class TurkeyMap extends Component<IProps, IState> {
     viewBox: { top: 0, left: 80, width: 1050, height: 585 },
     visible: true,
     hoverable: true,
-    data: { cities, counties },
+    data: { cities },
     customStyle: { idleColor: "#444", hoverColor: "#dc3522" },
   }
 
