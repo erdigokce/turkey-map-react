@@ -1,5 +1,6 @@
 import React, { Component, MouseEventHandler } from 'react';
 import Tooltip from './Tooltip';
+import styles from './Tooltip.css';
 import { Property } from 'csstype';
 import { cities, counties } from './data';
 
@@ -21,7 +22,7 @@ interface IProps {
 
 interface IState {
   hoveredCity?: CityType;
-  tooltipStyle: { left: number, top: number, visibility?: Property.Visibility }
+  tooltipStyle: { left: number, top: number, visibility?: Property.Visibility, animation?: Property.Animation }
 }
 
 export type CityType = { id: string; plateNumber: number; name: string; path: string };
@@ -65,17 +66,41 @@ export default class TurkeyMap extends Component<IProps, IState> {
   }
 
   onMouseMove: MouseEventHandler = (event) => {
-    this.setState(prevState => ({ tooltipStyle: { ...prevState.tooltipStyle, left: event.screenX, top: event.screenY } }));
+    this.setState(prevState => ({
+      tooltipStyle: {
+        ...prevState.tooltipStyle,
+        left: event.pageX + 16,
+        top: event.pageY - 32
+      }
+    }));
   }
 
   onMouseEnter = (event: React.MouseEvent<SVGGElement, MouseEvent>): void => {
-    (event.target as SVGGElement).style.fill = this.props.customStyle.hoverColor;
-    this.setState(prevState => ({ tooltipStyle: { ...prevState.tooltipStyle, visibility: "visible" } }));
+    const { customStyle, hoverable } = this.props;
+    (event.target as SVGGElement).style.fill = customStyle.hoverColor;
+    if (!hoverable)
+      return;
+    this.setState(prevState => ({
+      tooltipStyle: {
+        ...prevState.tooltipStyle,
+        animation: undefined,
+        visibility: "visible"
+      }
+    }));
   }
 
   onMouseLeave = (event: React.MouseEvent<SVGGElement, MouseEvent>): void => {
-    (event.target as SVGGElement).style.fill = this.props.customStyle.idleColor;
-    this.setState(prevState => ({ tooltipStyle: { ...prevState.tooltipStyle, visibility: "hidden" } }));
+    const { customStyle, hoverable } = this.props;
+    (event.target as SVGGElement).style.fill = customStyle.idleColor;
+    if (!hoverable)
+      return;
+    this.setState(prevState => ({
+      tooltipStyle: {
+        ...prevState.tooltipStyle,
+        visibility: undefined,
+        animation: `0.1s ${styles.fadeOut} forwards ease-out`,
+      }
+    }));
   }
 
   handleMouseEvent = (event: React.MouseEvent<SVGGElement, MouseEvent>, callback: (city: CityType) => void) => {
@@ -108,7 +133,7 @@ export default class TurkeyMap extends Component<IProps, IState> {
         onMouseEnter={this.onMouseEnter}
         onMouseLeave={this.onMouseLeave}
         onMouseOver={event => hoverable ? this.onHover(event) : undefined}
-        onMouseMove={this.onMouseMove}
+        onMouseMove={hoverable ? this.onMouseMove : undefined}
         onClick={this.onClick}
       >
         <path style={{ cursor: "pointer", fill: customStyle.idleColor }} d={city.path} />
@@ -120,10 +145,10 @@ export default class TurkeyMap extends Component<IProps, IState> {
 
   render() {
     const { hoveredCity, tooltipStyle } = this.state;
-    const { viewBox, visible } = this.props;
+    const { viewBox, visible, hoverable, onHover } = this.props;
     const { top, left, width, height } = viewBox;
     return <div id="svg-turkiye-haritasi-container" style={{ maxWidth: 1140, margin: "0 auto", textAlign: 'center' }} hidden={!visible}>
-      <Tooltip id={hoveredCity?.id} text={hoveredCity?.name} style={tooltipStyle} />
+      {hoverable && !onHover && <Tooltip id={hoveredCity?.id} text={hoveredCity?.name} style={tooltipStyle} />}
       <svg
         version="1.1"
         id="svg-turkiye-haritasi"
