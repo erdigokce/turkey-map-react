@@ -54,10 +54,13 @@ export default class TurkeyMap extends Component<IProps, IState> {
     return this.getCities().map(param => this.props.cityWrapper ? this.props.cityWrapper(param.element, param.cityType) : param.element);
   }
 
-  onHover = (event: React.MouseEvent<SVGGElement, MouseEvent>): void => {
+  handleHover = (city: CityType) => {
     const { onHover } = this.props;
-    const handleDefaultHover = (city: CityType) => { this.setState({ hoveredCityName: city.name }) };
-    this.handleMouseEvent(event, onHover || handleDefaultHover);
+    this.setState({ hoveredCityName: city.name }, () => onHover ? onHover(city) : {});
+  }
+
+  onHover = (event: React.MouseEvent<SVGGElement, MouseEvent>): void => {
+    this.handleMouseEvent(event, this.handleHover);
   }
 
   onClick = (event: React.MouseEvent<SVGGElement, MouseEvent>): void => {
