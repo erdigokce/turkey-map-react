@@ -1,13 +1,19 @@
-import React, { Component } from 'react';
+import React, { Component, MouseEventHandler } from 'react';
 import Tooltip from './Tooltip';
-import { data } from './data';
+import { Property } from 'csstype';
+import { cities, counties } from './data';
+
+type Data = {
+  cities: typeof cities,
+  counties: typeof counties,
+}
 
 interface IProps {
   viewBox: ViewBoxType,
   visible: boolean,
   hoverable: boolean,
   customStyle: CustomStyleType,
-  data: typeof data,
+  data: Data,
   cityWrapper?: (cityComponent: JSX.Element, city: CityType) => JSX.Element,
   onHover?: (city: CityType) => void,
   onClick?: (city: CityType) => void
@@ -15,6 +21,7 @@ interface IProps {
 
 interface IState {
   hoveredCity?: CityType;
+  tooltipStyle: { left: number, top: number, visibility?: Property.Visibility }
 }
 
 export type CityType = { id: string; plateNumber: number; name: string; path: string };
@@ -29,6 +36,7 @@ export default class TurkeyMap extends Component<IProps, IState> {
     super(props);
     this.state = {
       hoveredCity: undefined,
+      tooltipStyle: { left: 0, top: 0, visibility: "hidden" }
     };
   }
 
@@ -36,7 +44,7 @@ export default class TurkeyMap extends Component<IProps, IState> {
     viewBox: { top: 0, left: 80, width: 1050, height: 585 },
     visible: true,
     hoverable: true,
-    data: data,
+    data: { cities, counties },
     customStyle: { idleColor: "#444", hoverColor: "#dc3522" },
   }
 
@@ -46,8 +54,8 @@ export default class TurkeyMap extends Component<IProps, IState> {
 
   onHover = (event: React.MouseEvent<SVGGElement, MouseEvent>): void => {
     const { onHover } = this.props;
-    const onDefaultHover = (city: CityType) => this.setState({ hoveredCity: city });
-    this.handleMouseEvent(event, onHover || onDefaultHover);
+    const handleDefaultHover = (city: CityType) => this.setState({ hoveredCity: city });
+    this.handleMouseEvent(event, onHover || handleDefaultHover);
   }
 
   onClick = (event: React.MouseEvent<SVGGElement, MouseEvent>): void => {
@@ -56,12 +64,18 @@ export default class TurkeyMap extends Component<IProps, IState> {
       this.handleMouseEvent(event, onClick);
   }
 
+  onMouseMove: MouseEventHandler = (event) => {
+    this.setState(prevState => ({ tooltipStyle: { ...prevState.tooltipStyle, left: event.screenX, top: event.screenY } }));
+  }
+
   onMouseEnter = (event: React.MouseEvent<SVGGElement, MouseEvent>): void => {
     (event.target as SVGGElement).style.fill = this.props.customStyle.hoverColor;
+    this.setState(prevState => ({ tooltipStyle: { ...prevState.tooltipStyle, visibility: "visible" } }));
   }
 
   onMouseLeave = (event: React.MouseEvent<SVGGElement, MouseEvent>): void => {
     (event.target as SVGGElement).style.fill = this.props.customStyle.idleColor;
+    this.setState(prevState => ({ tooltipStyle: { ...prevState.tooltipStyle, visibility: "hidden" } }));
   }
 
   handleMouseEvent = (event: React.MouseEvent<SVGGElement, MouseEvent>, callback: (city: CityType) => void) => {
@@ -85,14 +99,16 @@ export default class TurkeyMap extends Component<IProps, IState> {
   }
 
   getCities = (): GetCitiesReturn[] => {
-    const { data: cityData, hoverable, customStyle } = this.props
-    return cityData.map(city => {
+    const { data, hoverable, customStyle } = this.props
+    const { cities: cityData } = data;
+    return cityData.map((city: CityType) => {
       let element = (<g id={city.id}
         data-plakakodu={city.plateNumber}
         data-iladi={city.name}
         onMouseEnter={this.onMouseEnter}
         onMouseLeave={this.onMouseLeave}
         onMouseOver={event => hoverable ? this.onHover(event) : undefined}
+        onMouseMove={this.onMouseMove}
         onClick={this.onClick}
       >
         <path style={{ cursor: "pointer", fill: customStyle.idleColor }} d={city.path} />
@@ -103,11 +119,11 @@ export default class TurkeyMap extends Component<IProps, IState> {
   }
 
   render() {
-    const { hoveredCity } = this.state;
+    const { hoveredCity, tooltipStyle } = this.state;
     const { viewBox, visible } = this.props;
     const { top, left, width, height } = viewBox;
     return <div id="svg-turkiye-haritasi-container" style={{ maxWidth: 1140, margin: "0 auto", textAlign: 'center' }} hidden={!visible}>
-      <Tooltip ref={this.tooltipRef} id={hoveredCity?.id} text={hoveredCity?.name} />
+      <Tooltip id={hoveredCity?.id} text={hoveredCity?.name} style={tooltipStyle} />
       <svg
         version="1.1"
         id="svg-turkiye-haritasi"

@@ -2,18 +2,16 @@ import React from 'react';
 import styles from './Tooltip.css';
 
 type TooltipProps = {
-  ref: React.LegacyRef<HTMLDivElement>,
   id?: string,
-  text?: string
+  text?: string,
+  style?: React.CSSProperties,
 };
 
 const Tooltip = (props: TooltipProps) => {
-  const { id, ref, text } = props;
+  const { id, text, style } = props;
   return (
-    <div ref={ref} key={id} className={styles.tooltip}>
+    <div key={id} className={styles.tooltiptext} style={style}>
       {text}
-      <span className={styles.tooltiptext}>
-      </span>
     </div>
   )
 }
