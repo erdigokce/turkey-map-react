@@ -1,10 +1,11 @@
 {
   "name": "turkey-map-react",
   "version": "1.0.3",
-  "description": "An interactive SVG turkey map for React JS applications.",
+  "description": "An interactive SVG Turkey map for React JS applications.",
   "main": "./lib/index.js",
   "scripts": {
-    "build": "rm -rf ./lib && ./node_modules/.bin/tsc",
+    "build": "./node_modules/.bin/tsc && webpack",
+    "clean-build": "rm -rf ./lib && yarn build",
     "prepare": "yarn build"
   },
   "repository": {
@@ -28,24 +29,27 @@
     "url": "https://github.com/erdigokce/turkey-map-react/issues"
   },
   "homepage": "https://github.com/erdigokce/turkey-map-react#readme",
+  "devDependencies": {
+    "@babel/cli": "^7.16.0",
+    "@babel/core": "^7.16.0",
+    "@babel/preset-env": "^7.16.4",
+    "@babel/preset-react": "^7.16.0",
+    "@babel/preset-typescript": "^7.16.0",
+    "@types/node": "^13.13.2",
+    "@types/react": "^16.9.34",
+    "@types/react-css-modules": "^4.6.4",
+    "@types/react-dom": "^16.9.6",
+    "babel-loader": "^8.2.3",
+    "babel-plugin-react-css-modules": "^5.2.6",
+    "css-loader": "^5.2.7",
+    "path": "^0.12.7",
+    "style-loader": "^3.3.1",
+    "typescript": "^3.8.3",
+    "webpack": "^5.64.4",
+    "webpack-cli": "^4.9.1"
+  },
   "peerDependencies": {
     "react": "^16.13.1",
     "react-dom": "^16.13.1"
-  },
-  "devDependencies": {
-    "@types/node": "^13.13.2",
-    "@types/react": "^16.9.34",
-    "@types/react-dom": "^16.9.6",
-    "babel-core": "^6.21.0",
-    "babel-loader": "^7.1.4",
-    "babel-preset-env": "^1.6.1",
-    "babel-preset-react": "^6.16.0",
-    "babel-preset-stage-0": "^6.24.1",
-    "path": "^0.12.7",
-    "react": "^16.13.1",
-    "react-dom": "^16.13.1",
-    "typescript": "^3.8.3",
-    "webpack": "^4.5.0",
-    "webpack-cli": "^3.2.1"
   }
 }
