@@ -116,6 +116,18 @@ Example:
 <TurkeyMap customStyle={{ idleColor: "#444", hoverColor: "#dc3522" }} />
 ```
 
+Default tooltip can be styled through predefined html IDs.
+
+`#svg-turkiye-haritasi-container-tooltip` is the ID for tooltip DOM. While `#svg-turkiye-haritasi-container` is the ID for container (parent) DOM.
+
+Example:
+
+```css
+#svg-turkiye-haritasi-container > #svg-turkiye-haritasi-container-tooltip {
+  background-color: rgba(54, 0, 99, 0.479);
+}
+```
+
 ## Licensing
 
 This project is released under a MIT License.
