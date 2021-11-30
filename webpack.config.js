@@ -1,11 +1,12 @@
 const path = require('path');
+
 module.exports = {
-  mode: 'production',
+  mode: 'development',
   entry: './src/index.tsx',
   output: {
     path: path.resolve('./lib'),
     filename: 'index.js',
-    libraryTarget: 'commonjs2'
+    libraryTarget: 'commonjs2',
   },
   resolve: {
     extensions: ['.js', '.ts', '.tsx'],
@@ -19,11 +20,11 @@ module.exports = {
           loader: 'babel-loader',
           options: {
             overrides: [{
-              test: "./src/data.ts",
+              test: './src/data.ts',
               compact: true,
             }],
-          }
-        }
+          },
+        },
       },
       {
         test: /\.css$/,
@@ -31,17 +32,17 @@ module.exports = {
         use: [
           'style-loader',
           {
-            loader: "css-loader", //generating unique classname
+            loader: 'css-loader', // generating unique classname
             options: {
               importLoaders: 1, // if specifying more loaders
               sourceMap: false,
               modules: {
-                localIdentName: "[path]___[name]__[local]___[hash:base64:5]" //babel-plugin-css-module format
-              }
-            }
-          }
-        ]
+                localIdentName: '[path]___[name]__[local]___[hash:base64:5]', // babel-plugin-css-module format
+              },
+            },
+          },
+        ],
       },
-    ]
-  }
-}
+    ],
+  },
+};

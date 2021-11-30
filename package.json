@@ -1,6 +1,6 @@
 {
   "name": "turkey-map-react",
-  "version": "1.1.1",
+  "version": "2.0.0",
   "description": "An interactive SVG Turkey map for React JS applications.",
   "main": "./lib/index.js",
   "scripts": {
@@ -36,12 +36,22 @@
     "@babel/preset-react": "^7.16.0",
     "@babel/preset-typescript": "^7.16.0",
     "@types/node": "^13.13.2",
-    "@types/react": "^16.9.34",
+    "@types/react": "^16.14.21",
     "@types/react-css-modules": "^4.6.4",
-    "@types/react-dom": "^16.9.6",
+    "@types/react-dom": "^16.9.14",
+    "@typescript-eslint/eslint-plugin": "^5.5.0",
+    "@typescript-eslint/parser": "^5.5.0",
     "babel-loader": "^8.2.3",
     "babel-plugin-react-css-modules": "^5.2.6",
     "css-loader": "^5.2.7",
+    "eslint": "^8.3.0",
+    "eslint-config-airbnb": "^19.0.1",
+    "eslint-plugin-import": "^2.25.3",
+    "eslint-plugin-jsx-a11y": "^6.5.1",
+    "eslint-plugin-react": "^7.27.1",
+    "eslint-plugin-react-hooks": "^4.3.0",
+    "react": "^17.0.2",
+    "react-dom": "^17.0.2",
     "path": "^0.12.7",
     "style-loader": "^3.3.1",
     "typescript": "^3.8.3",
@@ -49,7 +59,7 @@
     "webpack-cli": "^4.9.1"
   },
   "peerDependencies": {
-    "react": ">= 16.13.1 < 18",
-    "react-dom": ">= 16.13.1 < 18"
+    "react": ">=16.13.1",
+    "react-dom": ">=16.13.1"
   }
 }

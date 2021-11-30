@@ -1,0 +1,27 @@
+
+.citiesContainer {
+  width: 100%;
+  height: auto;
+  opacity: 0.3;
+}
+
+.countiesContainer {
+  width: 100%;
+  height: auto;
+  position: absolute;
+  left: 0;
+}
+
+.countiesContainer > g {
+  transform: scale(1) translate(0px, 0px) ;
+}
+
+@keyframes fadeOut {
+  0% {
+    opacity: 1;
+  }
+  100% {
+    visibility: hidden;
+    opacity: 0;
+  }
+}

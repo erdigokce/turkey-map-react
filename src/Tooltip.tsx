@@ -6,13 +6,15 @@ type TooltipProps = {
   style?: React.CSSProperties,
 };
 
-const Tooltip = (props: TooltipProps) => {
+const defaultProps: TooltipProps = {};
+
+const Tooltip = (props = defaultProps) => {
   const { text, style } = props;
   return (
     <div id="svg-turkiye-haritasi-container-tooltip" className={styles.tooltiptext} style={style}>
       {text}
     </div>
-  )
-}
+  );
+};
 
 export default Tooltip;
