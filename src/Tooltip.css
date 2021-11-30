@@ -9,13 +9,3 @@
   position: absolute;
   z-index: 1;
 }
-
-@keyframes fadeOut {
-  0% {
-    opacity: 1;
-  }
-  100% {
-    visibility: hidden;
-    opacity: 0;
-  }
-}

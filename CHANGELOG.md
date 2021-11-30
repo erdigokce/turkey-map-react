@@ -6,6 +6,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [2.0.0] - 2021-11-29
+
+This release introduces counties API.
+
+### Added
+
+- [County Map When A City is Clicked](https://github.com/erdigokce/turkey-map-react/issues/5)
+  County Map is introduced.
+
+### Changed
+
+- 
+
+### Fixed
+
+- 
+
 ## [1.1.2] - 2022-03-01
 
 This release fixes minor security vulnerabilities caused by dependencies.

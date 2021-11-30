@@ -1,174 +1,82 @@
-import React, { Component, MouseEventHandler } from 'react';
+import React, { useState } from 'react';
 import Tooltip from './Tooltip';
-import styles from './Tooltip.css';
-import { Property } from 'csstype';
-import { cities } from './data';
+import styles from './index.css';
+import {
+  CityType, CityWrapperType, Counties, CountyWrapperType, ViewBoxType,
+} from './types';
+import { wrapCity } from './service/city-service';
+import { wrapCounty } from './service/county-service';
+import { CityPaintSharedProps } from './components/CityPaint';
+import * as data from './data';
 
-type Data = {
-  cities: CityType[],
-  counties?: CountyType[],
-}
-
-interface IProps {
+interface IProps extends CityPaintSharedProps {
   viewBox: ViewBoxType,
   visible: boolean,
-  hoverable: boolean,
-  customStyle: CustomStyleType,
-  showTooltip: boolean,
   tooltipText?: string,
-  data: Data,
-  cityWrapper?: (cityComponent: JSX.Element, city: CityType) => JSX.Element,
-  onHover?: (city: CityType) => void,
-  onClick?: (city: CityType) => void
+  cities: CityType[],
+  counties: Counties,
+  cityWrapper?: CityWrapperType,
+  countyWrapper?: CountyWrapperType,
 }
 
-interface IState {
-  hoveredCityName?: string;
-  tooltipStyle: { left: number, top: number, visibility?: Property.Visibility, animation?: Property.Animation }
-}
+const TurkeyMap = (props: IProps) => {
+  const [tooltipStyle, setTooltipStyle] = useState<React.CSSProperties>({ left: 0, top: 0, visibility: 'hidden' });
+  const [selectedCityId, setSelectedCityId] = useState<number>();
+  const [hoveredCityName, setHoveredCityName] = useState<string>();
 
-export type CountyType = { id: number, countyName: string, cityId: number, priority: 0, path: string, subregions: string };
-export type CityType = { id: string; plateNumber: number; name: string; path: string };
-export type CustomStyleType = { idleColor: string, hoverColor: string };
-export type ViewBoxType = { top: number; left: number; width: number; height: number };
-type GetCitiesReturn = { element: JSX.Element, cityType: CityType };
+  const {
+    viewBox, showTooltip, hoverable, tooltipText, customStyle, visible, cities, counties, cityWrapper, countyWrapper,
+  } = props;
 
-export default class TurkeyMap extends Component<IProps, IState> {
+  const {
+    top, left, width, height,
+  } = viewBox;
 
-  constructor(props: IProps) {
-    super(props);
-    this.state = {
-      hoveredCityName: undefined,
-      tooltipStyle: { left: 0, top: 0, visibility: "hidden" }
-    };
-  }
+  const cityPaintProps = {
+    hoverable,
+    showTooltip,
+    customStyle,
+    setSelectedCityId,
+    setHoveredCityName,
+    setTooltipStyle,
+  };
 
-  static defaultProps: IProps = {
-    viewBox: { top: 0, left: 80, width: 1050, height: 585 },
-    visible: true,
-    hoverable: true,
-    showTooltip: false,
-    data: { cities },
-    customStyle: { idleColor: "#444", hoverColor: "#dc3522" },
-  }
+  const countyPaintProps = {
+    hoverable,
+    showTooltip,
+    customStyle,
+    setTooltipStyle,
+  };
 
-  cityWrapper = () => {
-    return this.getCities().map(param => this.props.cityWrapper ? this.props.cityWrapper(param.element, param.cityType) : param.element);
-  }
-
-  handleHover = (city: CityType) => {
-    const { onHover } = this.props;
-    this.setState({ hoveredCityName: city.name }, () => onHover ? onHover(city) : {});
-  }
-
-  onHover = (event: React.MouseEvent<SVGGElement, MouseEvent>): void => {
-    this.handleMouseEvent(event, this.handleHover);
-  }
-
-  onClick = (event: React.MouseEvent<SVGGElement, MouseEvent>): void => {
-    const { onClick } = this.props;
-    if (onClick)
-      this.handleMouseEvent(event, onClick);
-  }
-
-  onMouseMove: MouseEventHandler = (event) => {
-    this.setState(prevState => ({
-      tooltipStyle: {
-        ...prevState.tooltipStyle,
-        left: event.pageX + 16,
-        top: event.pageY - 32
-      }
-    }));
-  }
-
-  onMouseEnter = (event: React.MouseEvent<SVGGElement, MouseEvent>): void => {
-    const { customStyle, showTooltip } = this.props;
-    (event.target as SVGGElement).style.fill = customStyle.hoverColor;
-    if (!showTooltip)
-      return;
-    this.setState(prevState => ({
-      tooltipStyle: {
-        ...prevState.tooltipStyle,
-        animation: undefined,
-        visibility: "visible"
-      }
-    }));
-  }
-
-  onMouseLeave = (event: React.MouseEvent<SVGGElement, MouseEvent>): void => {
-    const { customStyle, showTooltip } = this.props;
-    (event.target as SVGGElement).style.fill = customStyle.idleColor;
-    if (!showTooltip)
-      return;
-    this.setState(prevState => ({
-      tooltipStyle: {
-        ...prevState.tooltipStyle,
-        visibility: undefined,
-        animation: `0.1s ${styles.fadeOut} forwards ease-out`,
-      }
-    }));
-  }
-
-  handleMouseEvent = (event: React.MouseEvent<SVGGElement, MouseEvent>, callback: (city: CityType) => void) => {
-    var element = event.target as SVGGElement;
-
-    if (element.tagName === 'path') {
-      const parent = element.parentNode as Element;
-
-      const cityId = parent.getAttribute('id') + "";
-      const cityPath = element.getAttribute("d") + "";
-      const cityPlateNumberText = parent.getAttribute('data-plakakodu') + "";
-      const cityPlateNumber: number = parseInt(cityPlateNumberText !== "" ? cityPlateNumberText : "0");
-      const cityName: string = parent.getAttribute('data-iladi') + "";
-      const city: CityType = { id: cityId, name: cityName, plateNumber: cityPlateNumber, path: cityPath };
-
-      if (callback && typeof callback === 'function') {
-        callback(city);
-        return;
-      }
-    }
-  }
-
-  getCities = (): GetCitiesReturn[] => {
-    const { data, hoverable, showTooltip, customStyle } = this.props
-    const { cities: cityData } = data;
-    return cityData.map((city: CityType) => {
-      let element = (<g id={city.id}
-        data-plakakodu={city.plateNumber}
-        data-iladi={city.name}
-        onMouseEnter={this.onMouseEnter}
-        onMouseLeave={this.onMouseLeave}
-        onMouseOver={event => hoverable ? this.onHover(event) : undefined}
-        onMouseMove={showTooltip ? this.onMouseMove : undefined}
-        onClick={this.onClick}
-      >
-        <path style={{ cursor: "pointer", fill: customStyle.idleColor }} d={city.path} />
-      </g >);
-      let cityType: CityType = { id: city.id, name: city.name, path: city.path, plateNumber: city.plateNumber }
-      return { element, cityType }
-    });
-  }
-
-  render() {
-    const { hoveredCityName, tooltipStyle } = this.state;
-    const { viewBox, visible, showTooltip, tooltipText } = this.props;
-    const { top, left, width, height } = viewBox;
-    return <div id="svg-turkiye-haritasi-container" style={{ maxWidth: 1140, margin: "0 auto", textAlign: 'center' }} hidden={!visible}>
+  return (
+    <div id="svg-turkiye-haritasi-container" style={{ maxWidth: 1140, margin: '0 auto', textAlign: 'center' }} hidden={!visible}>
       {showTooltip && <Tooltip text={tooltipText || hoveredCityName} style={tooltipStyle} />}
-      <svg
-        version="1.1"
-        id="svg-turkiye-haritasi"
-        xmlns="http://www.w3.org/2000/svg"
-        xmlnsXlink="http://www.w3.org/1999/xlink"
-        viewBox={`${top} ${left} ${width} ${height}`}
-        xmlSpace="preserve"
-        style={{ width: "100%", height: "auto" }}
-      >
+      <svg id="svg-turkiye-haritasi" viewBox={`${top} ${left} ${width} ${height}`} className={styles.citiesContainer}>
         <g key="turkiye" id="turkiye">
-          {this.cityWrapper()}
+          {wrapCity(cities, cityPaintProps)}
         </g>
       </svg>
+      {selectedCityId && (
+      <svg id="svg-sehir-haritasi" viewBox={`${top} 0 ${width} ${height}`} className={styles.countiesContainer}>
+        <g id={`${selectedCityId}`}>
+          {wrapCounty(counties, selectedCityId, countyPaintProps)}
+        </g>
+      </svg>
+      )}
     </div>
-  }
+  );
+};
 
-}
+TurkeyMap.defaultProps = {
+  viewBox: {
+    top: 0, left: 80, width: 1050, height: 585,
+  },
+  visible: true,
+  hoverable: true,
+  showTooltip: false,
+  customStyle: { idleColor: '#444', hoverColor: '#dc3522' },
+  cities: data.cities,
+  counties: data.counties,
+} as Partial<IProps>;
+
+export default TurkeyMap;
