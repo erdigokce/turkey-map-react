@@ -23,7 +23,7 @@ interface IProps {
 }
 
 interface IState {
-  hoveredCity?: CityType;
+  hoveredCityName?: string;
   tooltipStyle: { left: number, top: number, visibility?: Property.Visibility, animation?: Property.Animation }
 }
 
@@ -38,7 +38,7 @@ export default class TurkeyMap extends Component<IProps, IState> {
   constructor(props: IProps) {
     super(props);
     this.state = {
-      hoveredCity: undefined,
+      hoveredCityName: undefined,
       tooltipStyle: { left: 0, top: 0, visibility: "hidden" }
     };
   }
@@ -56,10 +56,13 @@ export default class TurkeyMap extends Component<IProps, IState> {
     return this.getCities().map(param => this.props.cityWrapper ? this.props.cityWrapper(param.element, param.cityType) : param.element);
   }
 
-  onHover = (event: React.MouseEvent<SVGGElement, MouseEvent>): void => {
+  handleHover = (city: CityType) => {
     const { onHover } = this.props;
-    const handleDefaultHover = (city: CityType) => { this.setState({ hoveredCity: city }) };
-    this.handleMouseEvent(event, onHover || handleDefaultHover);
+    this.setState({ hoveredCityName: city.name }, () => onHover ? onHover(city) : {});
+  }
+
+  onHover = (event: React.MouseEvent<SVGGElement, MouseEvent>): void => {
+    this.handleMouseEvent(event, this.handleHover);
   }
 
   onClick = (event: React.MouseEvent<SVGGElement, MouseEvent>): void => {
@@ -147,11 +150,11 @@ export default class TurkeyMap extends Component<IProps, IState> {
   }
 
   render() {
-    const { hoveredCity, tooltipStyle } = this.state;
+    const { hoveredCityName, tooltipStyle } = this.state;
     const { viewBox, visible, showTooltip, tooltipText } = this.props;
     const { top, left, width, height } = viewBox;
     return <div id="svg-turkiye-haritasi-container" style={{ maxWidth: 1140, margin: "0 auto", textAlign: 'center' }} hidden={!visible}>
-      {showTooltip && <Tooltip text={tooltipText || hoveredCity?.name} style={tooltipStyle} />}
+      {showTooltip && <Tooltip text={tooltipText || hoveredCityName} style={tooltipStyle} />}
       <svg
         version="1.1"
         id="svg-turkiye-haritasi"
