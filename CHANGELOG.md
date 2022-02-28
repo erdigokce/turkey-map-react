@@ -6,6 +6,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [1.1.2] - 2022-03-01
+
+This release fixes minor security vulnerabilities caused by dependencies.
+
+### Fixed
+
+- `css-loader` version has been upgraded to latest `6.6.0`.
+
 ## [1.1.1] - 2021-11-29
 
 This release fixes peer dependency version range.
