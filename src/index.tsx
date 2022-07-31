@@ -1,6 +1,5 @@
 import React, { Component, MouseEventHandler } from 'react';
 import Tooltip from './Tooltip';
-import styles from './Tooltip.css';
 import { Property } from 'csstype';
 import { cities } from './data';
 
@@ -102,7 +101,7 @@ export default class TurkeyMap extends Component<IProps, IState> {
       tooltipStyle: {
         ...prevState.tooltipStyle,
         visibility: undefined,
-        animation: `0.1s ${styles.fadeOut} forwards ease-out`,
+        animation: `0.1s turkey_react_map_tooltip_fade_out forwards ease-out`,
       }
     }));
   }
@@ -141,7 +140,7 @@ export default class TurkeyMap extends Component<IProps, IState> {
         onClick={this.onClick}
       >
         <path style={{ cursor: "pointer", fill: customStyle.idleColor }} d={city.path} />
-      </g >);
+      </g>);
       let cityType: CityType = { id: city.id, name: city.name, path: city.path, plateNumber: city.plateNumber }
       return { element, cityType }
     });
@@ -166,6 +165,17 @@ export default class TurkeyMap extends Component<IProps, IState> {
           {this.cityWrapper()}
         </g>
       </svg>
+      {showTooltip && <style>
+        {`@keyframes turkey_react_map_tooltip_fade_out {
+            0% {
+              opacity: 1;
+            }
+            100% {
+              visibility: hidden;
+              opacity: 0;
+            }
+          }`}
+      </style>}
     </div>
   }
 
