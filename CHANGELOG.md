@@ -6,6 +6,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [1.1.5] - 2022-08-27
+
+This release brings **React 18** _(18.2.0)_ compatibility.
+
+## [1.1.4] - 2022-07-31
+
+### Added
+- Live demo link has been added to Readme.
+
+### Changed
+- Style loaders has been removed from webpack config due to NextJS compatibility.
+- Tooltip styles has been moved to inline styling.
+
+### Fixed
+- ReDOS security fix (Bump terser dependency)
+
+## [1.1.3] - 2022-03-01
+
+This release fixes minor security vulnerabilities caused by dependencies.
+
 ## [1.1.2] - 2022-03-01
 
 This release fixes minor security vulnerabilities caused by dependencies.
