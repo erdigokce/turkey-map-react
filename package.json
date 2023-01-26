@@ -1,6 +1,6 @@
 {
   "name": "turkey-map-react",
-  "version": "1.1.5",
+  "version": "1.1.6",
   "description": "An interactive SVG Turkey map for React JS applications.",
   "main": "./lib/index.js",
   "readme": "./readme.md",

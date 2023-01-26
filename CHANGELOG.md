@@ -6,6 +6,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [1.1.6] - 2023-01-26
+
+### Fixed
+- json5 and minimatch security fix
+
 ## [1.1.5] - 2022-08-27
 
 This release brings **React 18** _(18.2.0)_ compatibility.
