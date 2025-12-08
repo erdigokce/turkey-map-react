@@ -166,7 +166,7 @@ describe('TurkeyMap Component', () => {
       const cityWrapper = (cityComponent: React.ReactElement, city: CityType) => {
         return React.cloneElement(cityComponent, { 
           'data-testid': `city-${city.id}` 
-        } as any);
+        } as React.HTMLAttributes<SVGGElement>);
       };
       
       const { container } = render(<TurkeyMap cityWrapper={cityWrapper} />);

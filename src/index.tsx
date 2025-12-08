@@ -49,16 +49,16 @@ const TurkeyMap: React.FC<IProps> = ({
     event: React.MouseEvent<SVGGElement, MouseEvent>, 
     callback: (city: CityType) => void
   ) => {
-    const element = event.target as SVGGElement;
+    const element = event.target as Element;
 
     if (element.tagName === 'path') {
       const parent = element.parentNode as Element;
 
-      const cityId = parent.getAttribute('id') + "";
-      const cityPath = element.getAttribute("d") + "";
-      const cityPlateNumberText = parent.getAttribute('data-plakakodu') + "";
+      const cityId = parent.getAttribute('id') ?? "";
+      const cityPath = element.getAttribute("d") ?? "";
+      const cityPlateNumberText = parent.getAttribute('data-plakakodu') ?? "";
       const cityPlateNumber: number = parseInt(cityPlateNumberText !== "" ? cityPlateNumberText : "0");
-      const cityName: string = parent.getAttribute('data-iladi') + "";
+      const cityName: string = parent.getAttribute('data-iladi') ?? "";
       const city: CityType = { id: cityId, name: cityName, plateNumber: cityPlateNumber, path: cityPath };
 
       if (callback && typeof callback === 'function') {
@@ -128,7 +128,6 @@ const TurkeyMap: React.FC<IProps> = ({
       const element = (
         <g 
           id={city.id}
-          key={city.id}
           data-plakakodu={city.plateNumber}
           data-iladi={city.name}
           onMouseEnter={handleOnMouseEnter}
@@ -140,15 +139,15 @@ const TurkeyMap: React.FC<IProps> = ({
           <path style={{ cursor: "pointer", fill: customStyle.idleColor }} d={city.path} />
         </g>
       );
-      const cityType: CityType = { id: city.id, name: city.name, path: city.path, plateNumber: city.plateNumber };
-      return { element, cityType };
+      return { element, cityType: city };
     });
   }, [data, hoverable, showTooltip, customStyle, handleOnMouseEnter, handleOnMouseLeave, handleOnHover, handleOnMouseMove, handleOnClick]);
 
   const renderCityWrapper = useCallback(() => {
-    return getCities().map(param => 
-      cityWrapper ? cityWrapper(param.element, param.cityType) : param.element
-    );
+    return getCities().map((param, index) => {
+      const wrappedElement = cityWrapper ? cityWrapper(param.element, param.cityType) : param.element;
+      return React.cloneElement(wrappedElement, { key: param.cityType.id });
+    });
   }, [getCities, cityWrapper]);
 
   const { top, left, width, height } = viewBox;
