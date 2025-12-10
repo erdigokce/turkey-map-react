@@ -212,4 +212,200 @@ describe('TurkeyMap Component', () => {
       expect(initialCityCount).toBe(afterRerenderCount);
     });
   });
+
+  describe('County Map Functionality', () => {
+    const mockCountyData = {
+      istanbul: {
+        cityId: "istanbul",
+        cityName: "İstanbul",
+        counties: [
+          { id: "kadikoy", name: "Kadıköy", path: "M 0 0 L 100 0 L 100 100 L 0 100 Z" },
+          { id: "besiktas", name: "Beşiktaş", path: "M 100 0 L 200 0 L 200 100 L 100 100 Z" }
+        ]
+      }
+    };
+
+    it('should not show county map by default', () => {
+      const { container } = render(<TurkeyMap />);
+      const countyMap = container.querySelector('#county-map-container');
+      expect(countyMap).not.toBeInTheDocument();
+    });
+
+    it('should not show county map when showCountyMapOnClick is false', () => {
+      const { container } = render(
+        <TurkeyMap 
+          showCountyMapOnClick={false}
+          countyData={mockCountyData}
+        />
+      );
+      
+      const firstPath = container.querySelector('path');
+      if (firstPath) {
+        fireEvent.click(firstPath);
+        const countyMap = container.querySelector('#county-map-container');
+        expect(countyMap).not.toBeInTheDocument();
+      }
+    });
+
+    it('should show county map when city is clicked and showCountyMapOnClick is true', () => {
+      const customData = {
+        cities: [
+          { id: 'istanbul', plateNumber: 34, name: 'İstanbul', path: 'M 0 0 L 100 100' }
+        ]
+      };
+
+      const { container } = render(
+        <TurkeyMap 
+          showCountyMapOnClick={true}
+          countyData={mockCountyData}
+          data={customData}
+        />
+      );
+      
+      const firstPath = container.querySelector('path');
+      if (firstPath) {
+        fireEvent.click(firstPath);
+        const countyMap = container.querySelector('#county-map-container');
+        expect(countyMap).toBeInTheDocument();
+      }
+    });
+
+    it('should not show county map if county data is not available for the city', () => {
+      const customData = {
+        cities: [
+          { id: 'ankara', plateNumber: 6, name: 'Ankara', path: 'M 0 0 L 100 100' }
+        ]
+      };
+
+      const { container } = render(
+        <TurkeyMap 
+          showCountyMapOnClick={true}
+          countyData={mockCountyData}
+          data={customData}
+        />
+      );
+      
+      const firstPath = container.querySelector('path');
+      if (firstPath) {
+        fireEvent.click(firstPath);
+        const countyMap = container.querySelector('#county-map-container');
+        expect(countyMap).not.toBeInTheDocument();
+      }
+    });
+
+    it('should close county map when close button is clicked', () => {
+      const customData = {
+        cities: [
+          { id: 'istanbul', plateNumber: 34, name: 'İstanbul', path: 'M 0 0 L 100 100' }
+        ]
+      };
+
+      const { container } = render(
+        <TurkeyMap 
+          showCountyMapOnClick={true}
+          countyData={mockCountyData}
+          data={customData}
+        />
+      );
+      
+      const firstPath = container.querySelector('path');
+      if (firstPath) {
+        fireEvent.click(firstPath);
+        
+        const closeButton = screen.getByLabelText('Close county map');
+        expect(closeButton).toBeInTheDocument();
+        
+        fireEvent.click(closeButton);
+        const countyMap = container.querySelector('#county-map-container');
+        expect(countyMap).not.toBeInTheDocument();
+      }
+    });
+
+    it('should call onClick handler even when showCountyMapOnClick is true', () => {
+      const onClickMock = jest.fn();
+      const customData = {
+        cities: [
+          { id: 'istanbul', plateNumber: 34, name: 'İstanbul', path: 'M 0 0 L 100 100' }
+        ]
+      };
+
+      const { container } = render(
+        <TurkeyMap 
+          onClick={onClickMock}
+          showCountyMapOnClick={true}
+          countyData={mockCountyData}
+          data={customData}
+        />
+      );
+      
+      const firstPath = container.querySelector('path');
+      if (firstPath) {
+        fireEvent.click(firstPath);
+        expect(onClickMock).toHaveBeenCalled();
+      }
+    });
+
+    it('should call onCountyClick when a county is clicked', () => {
+      const onCountyClick = jest.fn();
+      const customData = {
+        cities: [
+          { id: 'istanbul', plateNumber: 34, name: 'İstanbul', path: 'M 0 0 L 100 100' }
+        ]
+      };
+
+      const { container } = render(
+        <TurkeyMap 
+          showCountyMapOnClick={true}
+          countyData={mockCountyData}
+          onCountyClick={onCountyClick}
+          data={customData}
+        />
+      );
+      
+      // Open county map
+      const cityPath = container.querySelector('path');
+      if (cityPath) {
+        fireEvent.click(cityPath);
+        
+        // Click on a county
+        const countyPath = container.querySelectorAll('path')[1]; // Get county path
+        if (countyPath) {
+          fireEvent.click(countyPath);
+          expect(onCountyClick).toHaveBeenCalled();
+        }
+      }
+    });
+
+    it('should apply custom wrapper to county map', () => {
+      const customData = {
+        cities: [
+          { id: 'istanbul', plateNumber: 34, name: 'İstanbul', path: 'M 0 0 L 100 100' }
+        ]
+      };
+
+      const countyMapWrapper = (countyMapPopup: React.ReactElement) => {
+        return (
+          <div data-testid="custom-county-map">
+            {countyMapPopup}
+          </div>
+        );
+      };
+
+      const { container } = render(
+        <TurkeyMap 
+          showCountyMapOnClick={true}
+          countyData={mockCountyData}
+          countyMapWrapper={countyMapWrapper}
+          data={customData}
+        />
+      );
+      
+      const firstPath = container.querySelector('path');
+      if (firstPath) {
+        fireEvent.click(firstPath);
+        const customCountyMap = container.querySelector('[data-testid="custom-county-map"]');
+        expect(customCountyMap).toBeInTheDocument();
+      }
+    });
+  });
 });
