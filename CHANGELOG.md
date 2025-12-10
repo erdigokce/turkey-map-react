@@ -1,10 +1,17 @@
+# Changelog
 
-# Change Log
+All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
-All notable changes to this project will be documented in this file.
+## [2.0.0](https://github.com/erdigokce/turkey-map-react/compare/v1.2.2...v2.0.0) (2025-12-10)
 
-The format is based on [Keep a Changelog](http://keepachangelog.com/)
-and this project adheres to [Semantic Versioning](http://semver.org/).
+
+### ⚠ BREAKING CHANGES
+
+* Add automated release pipeline with conventional commits and standalone scripts (#23)
+
+### Features
+
+* Add automated release pipeline with conventional commits and standalone scripts ([#23](https://github.com/erdigokce/turkey-map-react/issues/23)) ([b9019e7](https://github.com/erdigokce/turkey-map-react/commit/b9019e7d3550e12fd6b0a8c097b6a721d323e498))
 
 ## [1.1.6] - 2023-01-26
 
