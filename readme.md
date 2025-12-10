@@ -87,6 +87,83 @@ in other words :
 { id: string, plateNumber: number, name: string, path: string }[]
 ```
 
+### County Map Feature
+
+When enabled, clicking on a city displays a popup showing the county (ilçe) map of that city. This feature:
+- Must be explicitly enabled via `showCountyMapOnClick` prop
+- Requires county data to be imported separately to keep bundle size small when not used
+- Can be customized via `countyMapWrapper` prop
+- Supports all the same interaction handlers as the main map
+
+#### Basic Usage
+
+```javascript
+import TurkeyMap from 'turkey-map-react';
+import { istanbulCounties, ankaraCounties } from 'turkey-map-react/lib/data/counties';
+
+// Import only the county data you need
+const countyData = {
+  istanbul: istanbulCounties,
+  ankara: ankaraCounties
+};
+
+<TurkeyMap 
+  showCountyMapOnClick={true}
+  countyData={countyData}
+/>
+```
+
+#### Handling County Events
+
+```javascript
+<TurkeyMap 
+  showCountyMapOnClick={true}
+  countyData={countyData}
+  onCountyClick={(county, city) => {
+    console.log(`${county.name} in ${city.name} was clicked!`);
+  }}
+/>
+```
+
+#### Custom County Map Wrapper
+
+```javascript
+const customCountyMapWrapper = (countyMapPopup, city, countyData) => (
+  <div className="my-custom-wrapper">
+    <h3>Custom Header for {city.name}</h3>
+    {countyMapPopup}
+  </div>
+);
+
+<TurkeyMap 
+  showCountyMapOnClick={true}
+  countyData={countyData}
+  countyMapWrapper={customCountyMapWrapper}
+/>
+```
+
+#### Providing Custom County Data
+
+County data must follow the `CountyData` type structure:
+
+```javascript
+import { CountyData } from 'turkey-map-react';
+
+const myCustomCountyData: CountyData = {
+  cityId: "mycity",
+  cityName: "My City",
+  counties: [
+    { id: "county1", name: "County 1", path: "M 0 0 L 100 0..." },
+    { id: "county2", name: "County 2", path: "M 100 0 L 200 0..." }
+  ]
+};
+
+<TurkeyMap 
+  showCountyMapOnClick={true}
+  countyData={{ mycity: myCustomCountyData }}
+/>
+```
+
 ## API
 
 ### Types
@@ -94,6 +171,8 @@ in other words :
 | Type              | Description                                                                             |
 | :---------------- | :-------------------------------------------------------------------------------------- |
 | *CityType*        | { **id**: *string*, **plateNumber**: *number*, **name**: *string*, **path**: *string* } |
+| *CountyType*      | { **id**: *string*, **name**: *string*, **path**: *string* }                            |
+| *CountyData*      | { **cityId**: *string*, **cityName**: *string*, **counties**: *CountyType*[] }          |
 | *ViewBoxType*     | { **top**: *number*, **left**: *number*, **width**: *number*, **height**: *number* }    |
 | *CustomStyleType* | { **idleColor**: *string*, **hoverColor**: *string* }                                   |
 
@@ -111,6 +190,10 @@ in other words :
 | cityWrapper | City DOMs are wrapped by provided component.               | ( **cityComponent**: *JSX.Element*, **city** : *CityType* ) => *JSX.Element* | *Unwrapped city*                                                       | 1.0.0 |
 | onHover     | Event when a city hovered on the map.                      | ( **city** : *CityType* ) => *void*                                          | -                                                                      | 1.0.0 |
 | onClick     | Event when a city clicked on the map                       | ( **city** : *CityType* ) => *void*                                          | -                                                                      | 1.0.0 |
+| showCountyMapOnClick | Enables county map popup when a city is clicked       | *boolean*                                                                    | *false*                                                                | 3.0.0 |
+| countyData  | County data for cities (import only what you need)         | *Record<string, CountyData>*                                                 | *undefined*                                                            | 3.0.0 |
+| countyMapWrapper | Custom wrapper for county map popup                    | ( **popup**: *JSX.Element*, **city**: *CityType*, **data**: *CountyData* ) => *JSX.Element* | *Default popup*                                                        | 3.0.0 |
+| onCountyClick | Event when a county is clicked in the county map         | ( **county**: *CountyType*, **city**: *CityType* ) => *void*                 | -                                                                      | 3.0.0 |
 
 ### Styling
 
