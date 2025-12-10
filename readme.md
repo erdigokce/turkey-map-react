@@ -164,6 +164,8 @@ const myCustomCountyData: CountyData = {
 />
 ```
 
+**Note on Sample Data:** The built-in county data for Istanbul, Ankara, and Izmir uses placeholder rectangular paths for demonstration purposes only. These are NOT actual geographic boundaries. For production use, you should provide real geographic SVG data for county boundaries. Consider using geographic data sources like GADM or OpenStreetMap for accurate county shapes.
+
 ## API
 
 ### Types
