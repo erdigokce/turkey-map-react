@@ -8,12 +8,14 @@ on:
         required: true
         type: string
 
+permissions:
+  contents: read
+  id-token: write
+
 jobs:
   publish:
     runs-on: ubuntu-latest
     if: inputs.confirm == 'publish'
-    permissions:
-      contents: read
     
     steps:
       - name: Checkout code
@@ -24,7 +26,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '22'
           registry-url: 'https://registry.npmjs.org'
           cache: 'npm'
       
@@ -38,17 +40,7 @@ jobs:
         run: npm test
       
       - name: Publish to npm
-        env:
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: |
-          # Use NPM_TOKEN if available, otherwise fall back to NODE_AUTH_TOKEN
-          if [ -n "$NPM_TOKEN" ]; then
-            echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" > .npmrc
-          fi
-          npm publish --access public
-          # Clean up
-          rm -f .npmrc
+        run: npm publish --access public
       
       - name: Get package version
         id: package-version
