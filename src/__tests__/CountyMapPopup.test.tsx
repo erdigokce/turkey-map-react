@@ -46,8 +46,22 @@ describe('CountyMapPopup Component', () => {
     it('should have close button', () => {
       render(<CountyMapPopup countyData={mockCountyData} onClose={mockOnClose} />);
       
-      const closeButton = screen.getByLabelText('Close');
+      const closeButton = screen.getByLabelText('Close county map');
       expect(closeButton).toBeInTheDocument();
+    });
+
+    it('should have proper accessibility attributes', () => {
+      const { container } = render(
+        <CountyMapPopup countyData={mockCountyData} onClose={mockOnClose} />
+      );
+      
+      const dialog = container.querySelector('[role="dialog"]');
+      expect(dialog).toBeInTheDocument();
+      expect(dialog).toHaveAttribute('aria-modal', 'true');
+      expect(dialog).toHaveAttribute('aria-labelledby', 'county-map-title');
+      
+      const title = container.querySelector('#county-map-title');
+      expect(title).toBeInTheDocument();
     });
   });
 
@@ -55,8 +69,16 @@ describe('CountyMapPopup Component', () => {
     it('should call onClose when close button is clicked', () => {
       render(<CountyMapPopup countyData={mockCountyData} onClose={mockOnClose} />);
       
-      const closeButton = screen.getByLabelText('Close');
+      const closeButton = screen.getByLabelText('Close county map');
       fireEvent.click(closeButton);
+      
+      expect(mockOnClose).toHaveBeenCalledTimes(1);
+    });
+
+    it('should call onClose when ESC key is pressed', () => {
+      render(<CountyMapPopup countyData={mockCountyData} onClose={mockOnClose} />);
+      
+      fireEvent.keyDown(document, { key: 'Escape' });
       
       expect(mockOnClose).toHaveBeenCalledTimes(1);
     });

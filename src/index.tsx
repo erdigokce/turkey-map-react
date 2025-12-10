@@ -1,6 +1,6 @@
 import React, { useState, useCallback, MouseEventHandler } from 'react';
 import Tooltip from './Tooltip';
-import CountyMapPopup, { CountyData } from './CountyMapPopup';
+import CountyMapPopup, { CountyData, CountyType } from './CountyMapPopup';
 import { Property } from 'csstype';
 import { cities } from './data';
 
@@ -22,7 +22,7 @@ interface IProps {
   showCountyMapOnClick?: boolean,
   countyData?: Record<string, CountyData>,
   countyMapWrapper?: (countyMapPopup: React.ReactElement, city: CityType, countyData: CountyData) => React.ReactElement,
-  onCountyClick?: (county: { id: string; name: string; path: string }, city: CityType) => void
+  onCountyClick?: (county: CountyType, city: CityType) => void
 }
 
 export type CityType = { id: string; plateNumber: number; name: string; path: string };
@@ -177,7 +177,7 @@ const TurkeyMap: React.FC<IProps> = ({
     setSelectedCountyData(null);
   }, []);
 
-  const handleCountyClickInternal = useCallback((county: { id: string; name: string; path: string }) => {
+  const handleCountyClickInternal = useCallback((county: CountyType) => {
     if (onCountyClick && selectedCountyData) {
       onCountyClick(county, selectedCountyData.city);
     }

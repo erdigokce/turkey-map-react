@@ -1,5 +1,11 @@
 import { CountyData } from '../../CountyMapPopup';
 
+/**
+ * Sample county data for Ankara
+ * 
+ * NOTE: The SVG path data uses placeholder rectangles for demonstration.
+ * For production, replace with actual geographic county boundaries.
+ */
 export const ankaraCounties: CountyData = {
   cityId: "ankara",
   cityName: "Ankara",

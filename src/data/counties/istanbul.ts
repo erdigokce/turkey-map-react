@@ -1,5 +1,19 @@
 import { CountyData } from '../../CountyMapPopup';
 
+/**
+ * Sample county data for Istanbul
+ * 
+ * NOTE: The SVG path data in this file uses placeholder rectangles for demonstration purposes.
+ * These are NOT actual geographic boundaries of Istanbul's counties.
+ * 
+ * For production use, you should:
+ * 1. Replace these paths with actual geographic SVG data
+ * 2. Use real county boundary coordinates
+ * 3. Consider using a geographic data source like GADM or OpenStreetMap
+ * 
+ * The current rectangular paths are provided as examples to show the data structure
+ * and to allow testing of the county map functionality.
+ */
 export const istanbulCounties: CountyData = {
   cityId: "istanbul",
   cityName: "İstanbul",

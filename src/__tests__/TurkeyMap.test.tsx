@@ -312,7 +312,7 @@ describe('TurkeyMap Component', () => {
       if (firstPath) {
         fireEvent.click(firstPath);
         
-        const closeButton = screen.getByLabelText('Close');
+        const closeButton = screen.getByLabelText('Close county map');
         expect(closeButton).toBeInTheDocument();
         
         fireEvent.click(closeButton);

@@ -42,6 +42,20 @@ const CountyMapPopup: React.FC<ICountyMapPopupProps> = ({
     animation?: Property.Animation 
   }>({ left: 0, top: 0, visibility: "hidden" });
 
+  // Handle ESC key to close popup
+  React.useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        onClose();
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [onClose]);
+
   const handleMouseEvent = useCallback((
     event: React.MouseEvent<SVGGElement, MouseEvent>, 
     callback: (county: CountyType) => void
@@ -125,6 +139,9 @@ const CountyMapPopup: React.FC<ICountyMapPopupProps> = ({
 
   return (
     <div 
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="county-map-title"
       style={{
         position: 'fixed',
         top: 0,
@@ -156,7 +173,7 @@ const CountyMapPopup: React.FC<ICountyMapPopupProps> = ({
           alignItems: 'center',
           marginBottom: '10px'
         }}>
-          <h2 style={{ margin: 0, fontSize: '1.5em' }}>{countyData.cityName} - İlçeler</h2>
+          <h2 id="county-map-title" style={{ margin: 0, fontSize: '1.5em' }}>{countyData.cityName} - İlçeler</h2>
           <button 
             onClick={onClose}
             style={{
@@ -166,7 +183,7 @@ const CountyMapPopup: React.FC<ICountyMapPopupProps> = ({
               cursor: 'pointer',
               padding: '0 10px'
             }}
-            aria-label="Close"
+            aria-label="Close county map"
           >
             ×
           </button>
