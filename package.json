@@ -9,7 +9,12 @@
     "clean-build": "rm -rf ./lib && yarn build",
     "prepare": "yarn build",
     "test": "jest",
-    "test:watch": "jest --watch"
+    "test:watch": "jest --watch",
+    "release": "./scripts/release.sh",
+    "release:major": "./scripts/release.sh major",
+    "release:minor": "./scripts/release.sh minor",
+    "release:patch": "./scripts/release.sh patch",
+    "publish:npm": "./scripts/publish.sh"
   },
   "repository": {
     "type": "git",
@@ -52,6 +57,7 @@
     "path": "^0.12.7",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
+    "standard-version": "^9.5.0",
     "ts-jest": "^29.2.5",
     "typescript": "^5.7.2",
     "webpack": "^5.97.1",

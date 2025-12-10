@@ -1,0 +1,61 @@
+name: Publish to npm
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: 'Type "publish" to confirm'
+        required: true
+        type: string
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    if: inputs.confirm == 'publish'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          registry-url: 'https://registry.npmjs.org'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Build package
+        run: npm run clean-build
+      
+      - name: Run tests
+        run: npm test
+      
+      - name: Publish to npm
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          # Use NPM_TOKEN if available, otherwise fall back to NODE_AUTH_TOKEN
+          if [ -n "$NPM_TOKEN" ]; then
+            echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" > .npmrc
+          fi
+          npm publish --access public
+          # Clean up
+          rm -f .npmrc
+      
+      - name: Get package version
+        id: package-version
+        run: echo "version=$(node -p "require('./package.json').version")" >> $GITHUB_OUTPUT
+      
+      - name: Create success summary
+        run: |
+          echo "## ✅ Package Published Successfully" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Package:** turkey-map-react@${{ steps.package-version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**npm:** https://www.npmjs.com/package/turkey-map-react" >> $GITHUB_STEP_SUMMARY

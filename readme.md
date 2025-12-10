@@ -148,9 +148,21 @@ Versioning scheme defined as in the pattern of "_majorVersion.minorVersion.bugfi
 | *minorVersion*  | This indicates that the version introduces small changes those are backward compatible with fine fitting for existing uses. |
 | *bugfixVersion* | This indicates that the version solves some problems those popped out in the current major or minor versions.               |
 
+## Release Process
+
+This project has an automated build and release pipeline. For details on creating releases and publishing to npm, see [RELEASE.md](./RELEASE.md).
+
+Quick reference:
+- Use [Conventional Commits](https://www.conventionalcommits.org/) for commit messages
+- Run `npm run release` to prepare a release (tests, build, changelog, version bump)
+- Run `npm run publish:npm` to publish to npm
+- See [RELEASE.md](./RELEASE.md) for complete documentation
+
 ## Contributing
 
 To contribute to this project please just open a pull request with a comprehensive description.
+
+When making commits, please follow the [Conventional Commits](https://www.conventionalcommits.org/) specification to enable automated changelog generation.
 
 ---
 
