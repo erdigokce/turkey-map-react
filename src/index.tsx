@@ -1,5 +1,6 @@
 import React, { useState, useCallback, MouseEventHandler } from 'react';
 import Tooltip from './Tooltip';
+import CountyMapPopup, { CountyData } from './CountyMapPopup';
 import { Property } from 'csstype';
 import { cities } from './data';
 
@@ -17,13 +18,20 @@ interface IProps {
   data?: Data,
   cityWrapper?: (cityComponent: React.ReactElement, city: CityType) => React.ReactElement,
   onHover?: (city: CityType) => void,
-  onClick?: (city: CityType) => void
+  onClick?: (city: CityType) => void,
+  showCountyMapOnClick?: boolean,
+  countyData?: Record<string, CountyData>,
+  countyMapWrapper?: (countyMapPopup: React.ReactElement, city: CityType, countyData: CountyData) => React.ReactElement,
+  onCountyClick?: (county: { id: string; name: string; path: string }, city: CityType) => void
 }
 
 export type CityType = { id: string; plateNumber: number; name: string; path: string };
 export type CustomStyleType = { idleColor: string, hoverColor: string };
 export type ViewBoxType = { top: number; left: number; width: number; height: number };
 type GetCitiesReturn = { element: React.ReactElement, cityType: CityType };
+
+// Re-export CountyData and CountyType for convenience
+export type { CountyData, CountyType } from './CountyMapPopup';
 
 const TurkeyMap: React.FC<IProps> = ({
   viewBox = { top: 0, left: 80, width: 1050, height: 585 },
@@ -35,9 +43,14 @@ const TurkeyMap: React.FC<IProps> = ({
   tooltipText,
   cityWrapper,
   onHover,
-  onClick
+  onClick,
+  showCountyMapOnClick = false,
+  countyData,
+  countyMapWrapper,
+  onCountyClick
 }) => {
   const [hoveredCityName, setHoveredCityName] = useState<string | undefined>(undefined);
+  const [selectedCountyData, setSelectedCountyData] = useState<{ city: CityType, countyData: CountyData } | null>(null);
   const [tooltipStyle, setTooltipStyle] = useState<{ 
     left: number, 
     top: number, 
@@ -79,10 +92,20 @@ const TurkeyMap: React.FC<IProps> = ({
   }, [handleMouseEvent, handleHover]);
 
   const handleOnClick = useCallback((event: React.MouseEvent<SVGGElement, MouseEvent>): void => {
-    if (onClick) {
-      handleMouseEvent(event, onClick);
-    }
-  }, [onClick, handleMouseEvent]);
+    const handleCityClick = (city: CityType) => {
+      // Call the original onClick handler if provided
+      if (onClick) {
+        onClick(city);
+      }
+
+      // Show county map if enabled and county data is available
+      if (showCountyMapOnClick && countyData && countyData[city.id]) {
+        setSelectedCountyData({ city, countyData: countyData[city.id] });
+      }
+    };
+
+    handleMouseEvent(event, handleCityClick);
+  }, [onClick, handleMouseEvent, showCountyMapOnClick, countyData]);
 
   const handleOnMouseMove: MouseEventHandler = useCallback((event) => {
     setTooltipStyle(prevState => ({
@@ -150,6 +173,16 @@ const TurkeyMap: React.FC<IProps> = ({
     });
   }, [getCities, cityWrapper]);
 
+  const handleCloseCountyMap = useCallback(() => {
+    setSelectedCountyData(null);
+  }, []);
+
+  const handleCountyClickInternal = useCallback((county: { id: string; name: string; path: string }) => {
+    if (onCountyClick && selectedCountyData) {
+      onCountyClick(county, selectedCountyData.city);
+    }
+  }, [onCountyClick, selectedCountyData]);
+
   const { top, left, width, height } = viewBox;
 
   return (
@@ -179,6 +212,24 @@ const TurkeyMap: React.FC<IProps> = ({
             }
           }`}
       </style>}
+      
+      {/* County Map Popup */}
+      {selectedCountyData && (() => {
+        const countyMapPopup = (
+          <CountyMapPopup
+            countyData={selectedCountyData.countyData}
+            onClose={handleCloseCountyMap}
+            customStyle={customStyle}
+            hoverable={hoverable}
+            showTooltip={showTooltip}
+            onCountyClick={handleCountyClickInternal}
+          />
+        );
+
+        return countyMapWrapper 
+          ? countyMapWrapper(countyMapPopup, selectedCountyData.city, selectedCountyData.countyData)
+          : countyMapPopup;
+      })()}
     </div>
   );
 };
