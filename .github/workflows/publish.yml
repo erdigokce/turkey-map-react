@@ -28,6 +28,7 @@ jobs:
         with:
           node-version: '22'
           registry-url: 'https://registry.npmjs.org'
+          always-auth: true
           cache: 'npm'
       
       - name: Install dependencies
@@ -40,7 +41,10 @@ jobs:
         run: npm test
       
       - name: Publish to npm
-        run: npm publish --access public
+        env:
+          NPM_CONFIG_PROVENANCE: true
+          NPM_CONFIG_REGISTRY: https://registry.npmjs.org
+        run: npm publish --provenance --access public
       
       - name: Get package version
         id: package-version
