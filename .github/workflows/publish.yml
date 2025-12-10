@@ -12,6 +12,8 @@ jobs:
   publish:
     runs-on: ubuntu-latest
     if: inputs.confirm == 'publish'
+    permissions:
+      contents: read
     
     steps:
       - name: Checkout code

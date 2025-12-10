@@ -10,8 +10,7 @@
     },
     {
       "type": "chore",
-      "hidden": false,
-      "section": "Chores"
+      "hidden": true
     },
     {
       "type": "docs",

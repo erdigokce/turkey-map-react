@@ -10,7 +10,7 @@
 # Usage: ./scripts/release.sh [release-type]
 # release-type: major, minor, patch, or prerelease (default: patch)
 
-set -e  # Exit on error
+set -euo pipefail  # Exit on error, undefined variables, and pipe failures
 
 # Colors for output
 RED='\033[0;31m'

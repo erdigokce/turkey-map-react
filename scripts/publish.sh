@@ -9,7 +9,7 @@
 #   or
 #   ./scripts/publish.sh (will use .npmrc or npm login credentials)
 
-set -e  # Exit on error
+set -euo pipefail  # Exit on error, undefined variables, and pipe failures
 
 # Colors for output
 RED='\033[0;31m'
@@ -37,7 +37,7 @@ echo -e "${YELLOW}Publishing version: ${PACKAGE_VERSION}${NC}"
 echo ""
 
 # Ask for confirmation
-read -p "Are you sure you want to publish version ${PACKAGE_VERSION} to npm? (y/N): " -n 1 -r
+read -p "Are you sure you want to publish version ${PACKAGE_VERSION} to npm? Type 'y' to confirm: " -n 1 -r
 echo ""
 if [[ ! $REPLY =~ ^[Yy]$ ]]; then
     echo -e "${RED}Publish cancelled${NC}"
