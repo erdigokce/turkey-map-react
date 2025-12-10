@@ -16,6 +16,10 @@ or
 yarn add turkey-map-react
 ```
 
+## Note about React
+
+This package declares React as a peer dependency and does not bundle React into the published build. The host application must provide React (version >=16.8). The package is built to be compatible with React 16/17/18 — your application’s React installation will be used at runtime, avoiding duplicate React instances and version conflicts.
+
 ## Usage
 
 ### Importing (ES6)

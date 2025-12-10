@@ -1,4 +1,4 @@
-import React, { Component, MouseEventHandler } from 'react';
+import React, { useState, useCallback, MouseEventHandler } from 'react';
 import Tooltip from './Tooltip';
 import { Property } from 'csstype';
 import { cities } from './data';
@@ -8,149 +8,152 @@ type Data = {
 }
 
 interface IProps {
-  viewBox: ViewBoxType,
-  visible: boolean,
-  hoverable: boolean,
-  customStyle: CustomStyleType,
-  showTooltip: boolean,
+  viewBox?: ViewBoxType,
+  visible?: boolean,
+  hoverable?: boolean,
+  customStyle?: CustomStyleType,
+  showTooltip?: boolean,
   tooltipText?: string,
-  data: Data,
-  cityWrapper?: (cityComponent: JSX.Element, city: CityType) => JSX.Element,
+  data?: Data,
+  cityWrapper?: (cityComponent: React.ReactElement, city: CityType) => React.ReactElement,
   onHover?: (city: CityType) => void,
   onClick?: (city: CityType) => void
-}
-
-interface IState {
-  hoveredCityName?: string;
-  tooltipStyle: { left: number, top: number, visibility?: Property.Visibility, animation?: Property.Animation }
 }
 
 export type CityType = { id: string; plateNumber: number; name: string; path: string };
 export type CustomStyleType = { idleColor: string, hoverColor: string };
 export type ViewBoxType = { top: number; left: number; width: number; height: number };
-type GetCitiesReturn = { element: JSX.Element, cityType: CityType };
+type GetCitiesReturn = { element: React.ReactElement, cityType: CityType };
 
-export default class TurkeyMap extends Component<IProps, IState> {
+const TurkeyMap: React.FC<IProps> = ({
+  viewBox = { top: 0, left: 80, width: 1050, height: 585 },
+  visible = true,
+  hoverable = true,
+  showTooltip = false,
+  data = { cities },
+  customStyle = { idleColor: "#444", hoverColor: "#dc3522" },
+  tooltipText,
+  cityWrapper,
+  onHover,
+  onClick
+}) => {
+  const [hoveredCityName, setHoveredCityName] = useState<string | undefined>(undefined);
+  const [tooltipStyle, setTooltipStyle] = useState<{ 
+    left: number, 
+    top: number, 
+    visibility?: Property.Visibility, 
+    animation?: Property.Animation 
+  }>({ left: 0, top: 0, visibility: "hidden" });
 
-  constructor(props: IProps) {
-    super(props);
-    this.state = {
-      hoveredCityName: undefined,
-      tooltipStyle: { left: 0, top: 0, visibility: "hidden" }
-    };
-  }
-
-  static defaultProps: IProps = {
-    viewBox: { top: 0, left: 80, width: 1050, height: 585 },
-    visible: true,
-    hoverable: true,
-    showTooltip: false,
-    data: { cities },
-    customStyle: { idleColor: "#444", hoverColor: "#dc3522" },
-  }
-
-  cityWrapper = () => {
-    return this.getCities().map(param => this.props.cityWrapper ? this.props.cityWrapper(param.element, param.cityType) : param.element);
-  }
-
-  handleHover = (city: CityType) => {
-    const { onHover } = this.props;
-    this.setState({ hoveredCityName: city.name }, () => onHover ? onHover(city) : {});
-  }
-
-  onHover = (event: React.MouseEvent<SVGGElement, MouseEvent>): void => {
-    this.handleMouseEvent(event, this.handleHover);
-  }
-
-  onClick = (event: React.MouseEvent<SVGGElement, MouseEvent>): void => {
-    const { onClick } = this.props;
-    if (onClick)
-      this.handleMouseEvent(event, onClick);
-  }
-
-  onMouseMove: MouseEventHandler = (event) => {
-    this.setState(prevState => ({
-      tooltipStyle: {
-        ...prevState.tooltipStyle,
-        left: event.pageX + 16,
-        top: event.pageY - 32
-      }
-    }));
-  }
-
-  onMouseEnter = (event: React.MouseEvent<SVGGElement, MouseEvent>): void => {
-    const { customStyle, showTooltip } = this.props;
-    (event.target as SVGGElement).style.fill = customStyle.hoverColor;
-    if (!showTooltip)
-      return;
-    this.setState(prevState => ({
-      tooltipStyle: {
-        ...prevState.tooltipStyle,
-        animation: undefined,
-        visibility: "visible"
-      }
-    }));
-  }
-
-  onMouseLeave = (event: React.MouseEvent<SVGGElement, MouseEvent>): void => {
-    const { customStyle, showTooltip } = this.props;
-    (event.target as SVGGElement).style.fill = customStyle.idleColor;
-    if (!showTooltip)
-      return;
-    this.setState(prevState => ({
-      tooltipStyle: {
-        ...prevState.tooltipStyle,
-        visibility: undefined,
-        animation: `0.1s turkey_react_map_tooltip_fade_out forwards ease-out`,
-      }
-    }));
-  }
-
-  handleMouseEvent = (event: React.MouseEvent<SVGGElement, MouseEvent>, callback: (city: CityType) => void) => {
-    var element = event.target as SVGGElement;
+  const handleMouseEvent = useCallback((
+    event: React.MouseEvent<SVGGElement, MouseEvent>, 
+    callback: (city: CityType) => void
+  ) => {
+    const element = event.target as Element;
 
     if (element.tagName === 'path') {
       const parent = element.parentNode as Element;
 
-      const cityId = parent.getAttribute('id') + "";
-      const cityPath = element.getAttribute("d") + "";
-      const cityPlateNumberText = parent.getAttribute('data-plakakodu') + "";
+      const cityId = parent.getAttribute('id') ?? "";
+      const cityPath = element.getAttribute("d") ?? "";
+      const cityPlateNumberText = parent.getAttribute('data-plakakodu') ?? "";
       const cityPlateNumber: number = parseInt(cityPlateNumberText !== "" ? cityPlateNumberText : "0");
-      const cityName: string = parent.getAttribute('data-iladi') + "";
+      const cityName: string = parent.getAttribute('data-iladi') ?? "";
       const city: CityType = { id: cityId, name: cityName, plateNumber: cityPlateNumber, path: cityPath };
 
       if (callback && typeof callback === 'function') {
         callback(city);
-        return;
       }
     }
-  }
+  }, []);
 
-  getCities = (): GetCitiesReturn[] => {
-    const { data, hoverable, showTooltip, customStyle } = this.props
+  const handleHover = useCallback((city: CityType) => {
+    setHoveredCityName(city.name);
+    if (onHover) {
+      onHover(city);
+    }
+  }, [onHover]);
+
+  const handleOnHover = useCallback((event: React.MouseEvent<SVGGElement, MouseEvent>): void => {
+    handleMouseEvent(event, handleHover);
+  }, [handleMouseEvent, handleHover]);
+
+  const handleOnClick = useCallback((event: React.MouseEvent<SVGGElement, MouseEvent>): void => {
+    if (onClick) {
+      handleMouseEvent(event, onClick);
+    }
+  }, [onClick, handleMouseEvent]);
+
+  const handleOnMouseMove: MouseEventHandler = useCallback((event) => {
+    setTooltipStyle(prevState => ({
+      ...prevState,
+      left: event.pageX + 16,
+      top: event.pageY - 32
+    }));
+  }, []);
+
+  const handleOnMouseEnter = useCallback((event: React.MouseEvent<SVGGElement, MouseEvent>): void => {
+    const target = event.currentTarget;
+    const path = target.querySelector('path');
+    if (path) {
+      path.style.fill = customStyle.hoverColor;
+    }
+    if (!showTooltip) return;
+    
+    setTooltipStyle(prevState => ({
+      ...prevState,
+      animation: undefined,
+      visibility: "visible"
+    }));
+  }, [customStyle.hoverColor, showTooltip]);
+
+  const handleOnMouseLeave = useCallback((event: React.MouseEvent<SVGGElement, MouseEvent>): void => {
+    const target = event.currentTarget;
+    const path = target.querySelector('path');
+    if (path) {
+      path.style.fill = customStyle.idleColor;
+    }
+    if (!showTooltip) return;
+    
+    setTooltipStyle(prevState => ({
+      ...prevState,
+      visibility: undefined,
+      animation: `0.1s turkey_react_map_tooltip_fade_out forwards ease-out`,
+    }));
+  }, [customStyle.idleColor, showTooltip]);
+
+  const getCities = useCallback((): GetCitiesReturn[] => {
     const { cities: cityData } = data;
     return cityData.map((city: CityType) => {
-      let element = (<g id={city.id}
-        data-plakakodu={city.plateNumber}
-        data-iladi={city.name}
-        onMouseEnter={this.onMouseEnter}
-        onMouseLeave={this.onMouseLeave}
-        onMouseOver={event => hoverable ? this.onHover(event) : undefined}
-        onMouseMove={showTooltip ? this.onMouseMove : undefined}
-        onClick={this.onClick}
-      >
-        <path style={{ cursor: "pointer", fill: customStyle.idleColor }} d={city.path} />
-      </g>);
-      let cityType: CityType = { id: city.id, name: city.name, path: city.path, plateNumber: city.plateNumber }
-      return { element, cityType }
+      const element = (
+        <g 
+          id={city.id}
+          data-plakakodu={city.plateNumber}
+          data-iladi={city.name}
+          onMouseEnter={handleOnMouseEnter}
+          onMouseLeave={handleOnMouseLeave}
+          onMouseOver={event => hoverable ? handleOnHover(event) : undefined}
+          onMouseMove={showTooltip ? handleOnMouseMove : undefined}
+          onClick={handleOnClick}
+        >
+          <path style={{ cursor: "pointer", fill: customStyle.idleColor }} d={city.path} />
+        </g>
+      );
+      return { element, cityType: city };
     });
-  }
+  }, [data, hoverable, showTooltip, customStyle, handleOnMouseEnter, handleOnMouseLeave, handleOnHover, handleOnMouseMove, handleOnClick]);
 
-  render() {
-    const { hoveredCityName, tooltipStyle } = this.state;
-    const { viewBox, visible, showTooltip, tooltipText } = this.props;
-    const { top, left, width, height } = viewBox;
-    return <div id="svg-turkiye-haritasi-container" style={{ maxWidth: 1140, margin: "0 auto", textAlign: 'center' }} hidden={!visible}>
+  const renderCityWrapper = useCallback(() => {
+    return getCities().map((param, index) => {
+      const wrappedElement = cityWrapper ? cityWrapper(param.element, param.cityType) : param.element;
+      return React.cloneElement(wrappedElement, { key: param.cityType.id });
+    });
+  }, [getCities, cityWrapper]);
+
+  const { top, left, width, height } = viewBox;
+
+  return (
+    <div id="svg-turkiye-haritasi-container" style={{ maxWidth: 1140, margin: "0 auto", textAlign: 'center' }} hidden={!visible}>
       {showTooltip && <Tooltip text={tooltipText || hoveredCityName} style={tooltipStyle} />}
       <svg
         version="1.1"
@@ -162,7 +165,7 @@ export default class TurkeyMap extends Component<IProps, IState> {
         style={{ width: "100%", height: "auto" }}
       >
         <g key="turkiye" id="turkiye">
-          {this.cityWrapper()}
+          {renderCityWrapper()}
         </g>
       </svg>
       {showTooltip && <style>
@@ -177,6 +180,7 @@ export default class TurkeyMap extends Component<IProps, IState> {
           }`}
       </style>}
     </div>
-  }
+  );
+};
 
-}
+export default TurkeyMap;
