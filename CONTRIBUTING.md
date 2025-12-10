@@ -5,15 +5,55 @@ email, or any other method with the owners of this repository before making a ch
 
 Please note we have a code of conduct, please follow it in all your interactions with the project.
 
+## Commit Message Convention
+
+This project uses [Conventional Commits](https://www.conventionalcommits.org/) specification for commit messages. This enables automated changelog generation and semantic versioning.
+
+### Format
+
+```
+<type>(<scope>): <subject>
+
+<body>
+
+<footer>
+```
+
+### Types
+
+- `feat`: A new feature (triggers MINOR version bump)
+- `fix`: A bug fix (triggers PATCH version bump)
+- `docs`: Documentation only changes
+- `style`: Changes that don't affect code meaning
+- `refactor`: Code change that neither fixes a bug nor adds a feature
+- `perf`: Performance improvement
+- `test`: Adding or updating tests
+- `chore`: Changes to the build process or auxiliary tools
+
+### Examples
+
+```bash
+feat: add custom tooltip support
+fix: resolve rendering issue on mobile
+docs: update installation instructions
+test: add tests for tooltip component
+```
+
+For breaking changes, add `!` after type or `BREAKING CHANGE:` in footer:
+```bash
+feat!: remove deprecated API
+```
+
 ## Pull Request Process
 
 1. Ensure any install or build dependencies are removed before the end of the layer when doing a 
    build.
 2. Update the README.md with details of changes to the interface, this includes new environment 
    variables, exposed ports, useful file locations and container parameters.
-3. Increase the version numbers in any examples files and the README.md to the new version that this
-   Pull Request would represent. The versioning scheme we use is [SemVer](http://semver.org/).
-4. You may merge the Pull Request in once you have the sign-off of two other developers, or if you 
+3. Follow the commit message convention described above. The versioning is handled automatically
+   by the release script based on conventional commits. The versioning scheme we use is [SemVer](http://semver.org/).
+4. Ensure all tests pass by running `npm test`
+5. You may merge the Pull Request in once you have the sign-off of two other developers, or if you 
    do not have permission to do that, you may request the second reviewer to merge it for you.
 
 ## Code of Conduct

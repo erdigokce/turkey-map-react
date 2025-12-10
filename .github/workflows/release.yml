@@ -1,0 +1,69 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_type:
+        description: 'Release type'
+        required: true
+        default: 'patch'
+        type: choice
+        options:
+          - major
+          - minor
+          - patch
+          - prerelease
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+      
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Run release script
+        run: ./scripts/release.sh ${{ inputs.release_type }}
+      
+      - name: Push changes and tags
+        run: |
+          git push --follow-tags origin ${{ github.ref_name }}
+      
+      - name: Create GitHub Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG_NAME=$(git describe --tags --abbrev=0)
+          CHANGELOG_CONTENT=$(awk -v ver="$TAG_NAME" '
+            $0 ~ "## \\[?"ver {found=1; next} 
+            /^## \[?[0-9]/ && found {exit} 
+            found {print}
+          ' CHANGELOG.md | sed '/^$/d')
+          
+          if [ -z "$CHANGELOG_CONTENT" ]; then
+            CHANGELOG_CONTENT="Release $TAG_NAME"
+          fi
+          
+          gh release create "$TAG_NAME" \
+            --title "$TAG_NAME" \
+            --notes "$CHANGELOG_CONTENT" \
+            --verify-tag
