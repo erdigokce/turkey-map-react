@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [2.0.4](https://github.com/erdigokce/turkey-map-react/compare/v2.0.3...v2.0.4) (2026-03-14)
+
+
+### Bug Fixes
+
+* Bump webpack from 5.103.0 to 5.105.0 ([#26](https://github.com/erdigokce/turkey-map-react/issues/26)) ([0a8b86a](https://github.com/erdigokce/turkey-map-react/commit/0a8b86a78c463172a76b15c6df9a83964c726c6b))
+* Dependabot/npm and yarn/webpack 5.105.0 ([#30](https://github.com/erdigokce/turkey-map-react/issues/30)) ([59edc20](https://github.com/erdigokce/turkey-map-react/commit/59edc20142e004dcccff3975d0e7bd1f12b55973))
+
+
+### Refactoring
+
+* Simplify tooltip test queries by using a helper function ([8f1bf41](https://github.com/erdigokce/turkey-map-react/commit/8f1bf414e11051db962631025807b3cf53c5f4be))
+
 ### [2.0.3](https://github.com/erdigokce/turkey-map-react/compare/v2.0.2...v2.0.3) (2025-12-10)
 
 ### [2.0.2](https://github.com/erdigokce/turkey-map-react/compare/v2.0.1...v2.0.2) (2025-12-10)
