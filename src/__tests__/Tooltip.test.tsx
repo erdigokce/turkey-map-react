@@ -58,7 +58,7 @@ describe('Tooltip Component', () => {
       left: '50px',
       top: '100px',
       backgroundColor: 'black',
-      color: 'white'
+      color: 'rgb(255, 255, 255)'
     });
   });
 

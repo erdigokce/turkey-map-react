@@ -19,7 +19,7 @@ const tooltipTextStyle: React.CSSProperties = {
 const Tooltip = (props: TooltipProps) => {
   const { text, style } = props;
   return (
-    <div id="svg-turkiye-haritasi-container-tooltip" style={{ ...style, ...tooltipTextStyle }}>
+    <div id="svg-turkiye-haritasi-container-tooltip" style={{ ...tooltipTextStyle, ...style }}>
       {text}
     </div>
   )
