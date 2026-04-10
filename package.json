@@ -6,7 +6,7 @@
   "readme": "./readme.md",
   "scripts": {
     "build": "./node_modules/.bin/tsc && webpack",
-    "clean-build": "rm -rf ./lib && yarn build",
+    "clean-build": "rm -rf ./lib && npm run build",
     "prepare": "yarn build",
     "test": "jest",
     "test:watch": "jest --watch",
