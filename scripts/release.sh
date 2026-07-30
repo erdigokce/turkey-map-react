@@ -47,7 +47,7 @@ echo ""
 
 # Step 3: Generate changelog and update version
 echo -e "${GREEN}Step 3/4: Generating changelog and updating version...${NC}"
-npx standard-version --release-as ${RELEASE_TYPE}
+npx commit-and-tag-version --release-as ${RELEASE_TYPE}
 if [ $? -ne 0 ]; then
     echo -e "${RED}Version update failed! Aborting release.${NC}"
     exit 1
