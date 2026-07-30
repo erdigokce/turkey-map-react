@@ -1,7 +1,12 @@
 # Changelog
 
-All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
+All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [2.0.6](https://github.com/erdigokce/turkey-map-react/compare/v2.0.5...v2.0.6) (2026-07-30)
+
+### Bug Fixes
+
+* **security:** Library updates to patch security issues. ([592f5c5](https://github.com/erdigokce/turkey-map-react/commit/592f5c5c67886a637117c9f1215e7d8b32b305b3))
 ### [2.0.5](https://github.com/erdigokce/turkey-map-react/compare/v2.0.4...v2.0.5) (2026-04-10)
 
 ### [2.0.4](https://github.com/erdigokce/turkey-map-react/compare/v2.0.3...v2.0.4) (2026-03-14)
