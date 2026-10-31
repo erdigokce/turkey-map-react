@@ -1,0 +1,68 @@
+version: 2
+
+updates:
+  # npm dependencies (package.json + package-lock.json)
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "Europe/Istanbul"
+    open-pull-requests-limit: 10
+    # Move the range in package.json up as well as the locked version.
+    versioning-strategy: "increase"
+    commit-message:
+      prefix: "chore"
+      prefix-development: "chore"
+      include: "scope"
+    labels:
+      - "dependencies"
+    groups:
+      # Minor and patch updates arrive as a single PR per week.
+      # Major updates are deliberately excluded and opened individually so
+      # they always get a manual review (they are never auto-merged).
+      minor-and-patch:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
+    ignore:
+      # React majors are breaking changes for a library that supports React
+      # >=16.8, so they must be handled by hand.
+      - dependency-name: "react"
+        update-types:
+          - "version-update:semver-major"
+      - dependency-name: "react-dom"
+        update-types:
+          - "version-update:semver-major"
+      - dependency-name: "@types/react"
+        update-types:
+          - "version-update:semver-major"
+      - dependency-name: "@types/react-dom"
+        update-types:
+          - "version-update:semver-major"
+
+  # GitHub Actions used by the workflows in .github/workflows
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "Europe/Istanbul"
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "chore"
+      include: "scope"
+    labels:
+      - "dependencies"
+      - "github-actions"
+    groups:
+      github-actions:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"

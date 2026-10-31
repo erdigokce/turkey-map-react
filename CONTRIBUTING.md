@@ -56,6 +56,31 @@ feat!: remove deprecated API
 5. You may merge the Pull Request in once you have the sign-off of two other developers, or if you 
    do not have permission to do that, you may request the second reviewer to merge it for you.
 
+## Dependency Updates
+
+Dependencies are kept up to date automatically:
+
+- **Dependabot** (`.github/dependabot.yml`) checks npm packages and GitHub Actions
+  every Monday and opens pull requests.
+- Minor and patch npm updates are grouped into a single PR per week. Updates to
+  `react`, `react-dom` and their type packages never cross a major version
+  automatically.
+- **CI** (`.github/workflows/ci.yml`) installs dependencies, runs the test suite
+  and builds the package on every pull request and push to `master`.
+- **Auto-merge** (`.github/workflows/dependabot-auto-merge.yml`) squash-merges a
+  Dependabot PR only after CI passes and only when the update is a patch or a
+  minor (non-major) bump.
+
+Major version bumps are always opened individually and must be reviewed and
+merged by a maintainer.
+
+### Enabling security updates
+
+Dependabot version updates are configured in this repository. To also receive
+pull requests for known vulnerabilities, enable **Dependabot alerts** and
+**Dependabot security updates** under
+*Settings → Code security and analysis* in the GitHub repository.
+
 ## Code of Conduct
 
 ### Our Pledge

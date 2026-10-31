@@ -1,0 +1,113 @@
+name: Dependabot Auto Merge
+
+# Runs after the CI workflow finishes for a pull request. Only Dependabot PRs
+# that passed CI are considered, and major version bumps are always left for a
+# human to review and merge.
+on:
+  workflow_run:
+    workflows: ["CI"]
+    types:
+      - completed
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  auto-merge:
+    name: Auto-merge safe Dependabot PRs
+    if: >
+      github.event.workflow_run.event == 'pull_request' &&
+      github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Resolve Dependabot pull request
+        id: pr
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          HEAD_BRANCH: ${{ github.event.workflow_run.head_branch }}
+        run: |
+          set -euo pipefail
+
+          pr_json=$(gh pr list \
+            --repo "$GITHUB_REPOSITORY" \
+            --head "$HEAD_BRANCH" \
+            --state open \
+            --json number,title,url,author \
+            --jq '[.[] | select(.author.login == "dependabot[bot]")][0]')
+
+          if [ -z "$pr_json" ] || [ "$pr_json" = "null" ]; then
+            echo "No open Dependabot PR found for branch '$HEAD_BRANCH' - nothing to do."
+            echo "found=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          echo "found=true" >> "$GITHUB_OUTPUT"
+          echo "number=$(jq -r '.number' <<< "$pr_json")" >> "$GITHUB_OUTPUT"
+          echo "url=$(jq -r '.url' <<< "$pr_json")" >> "$GITHUB_OUTPUT"
+          echo "title=$(jq -r '.title' <<< "$pr_json")" >> "$GITHUB_OUTPUT"
+          echo "Resolved PR #$(jq -r '.number' <<< "$pr_json"): $(jq -r '.title' <<< "$pr_json")"
+
+      - name: Decide whether the update is safe to merge
+        id: update
+        if: steps.pr.outputs.found == 'true'
+        env:
+          TITLE: ${{ steps.pr.outputs.title }}
+        run: |
+          set -euo pipefail
+
+          # Grouped minor/patch updates are safe by configuration: the groups
+          # listed here can only contain minor and patch bumps (see
+          # dependabot.yml). Any new group must be added explicitly.
+          if [[ "$TITLE" =~ ^Bump\ the\ (minor-and-patch|github-actions)\ group ]]; then
+            echo "Grouped minor/patch update detected - safe to merge."
+            echo "safe=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          versions=$(sed -n 's/.* from v\{0,1\}\([0-9][^ ]*\) to v\{0,1\}\([0-9][^ ]*\).*/\1 \2/p' <<< "$TITLE")
+          if [ -z "$versions" ]; then
+            echo "Could not parse versions from title '$TITLE' - leaving for manual review."
+            echo "safe=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          read -r current next <<< "$versions"
+          current_major=${current%%.*}
+          next_major=${next%%.*}
+
+          if [ "$current_major" != "$next_major" ]; then
+            echo "Major update ($current -> $next) - leaving for manual review."
+            echo "safe=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          # In the 0.x range a minor bump may be breaking, so only patches are
+          # auto-merged there.
+          if [ "$current_major" = "0" ]; then
+            current_rest=${current#*.}
+            next_rest=${next#*.}
+            if [ "${current_rest%%.*}" != "${next_rest%%.*}" ]; then
+              echo "0.x minor update ($current -> $next) - leaving for manual review."
+              echo "safe=false" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+          fi
+
+          echo "Non-major update ($current -> $next) - safe to merge."
+          echo "safe=true" >> "$GITHUB_OUTPUT"
+
+      - name: Merge pull request
+        if: steps.update.outputs.safe == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_URL: ${{ steps.pr.outputs.url }}
+        run: |
+          set -euo pipefail
+
+          # Merge directly once CI has passed. If branch protection rules ask
+          # for something extra (e.g. a review), fall back to enabling
+          # auto-merge so the PR lands as soon as requirements are met.
+          gh pr merge "$PR_URL" --squash --delete-branch \
+            || gh pr merge "$PR_URL" --auto --squash --delete-branch
