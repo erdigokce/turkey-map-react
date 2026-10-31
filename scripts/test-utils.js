@@ -25,7 +25,11 @@ const packPackage = (destination) => {
     { cwd: root, encoding: 'utf8' },
   );
 
-  const jsonStart = output.indexOf('[');
+  // `npm pack` can run the `prepare` script (and therefore the webpack build)
+  // before printing the JSON result. The build output contains bracketed words
+  // such as `[emitted]`, so find the start of the actual JSON array instead of
+  // the first `[` in the output.
+  const jsonStart = output.search(/\[\s*\{/);
   if (jsonStart === -1) {
     throw new Error(`Could not parse npm pack output:\n${output}`);
   }
