@@ -1,0 +1,24 @@
+schema: spec-driven
+
+# Constraints that guide OpenSpec artifacts and workflows.
+# Keep only rules an agent cannot infer by reading the code.
+context: >
+  Public library constraints:
+  - Backward compatibility is mandatory: new features must be opt-in props, and
+  <TurkeyMap />, existing props, and legacy DOM ids must keep working.
+  - Zero runtime dependencies. React and React DOM are peer dependencies
+  supporting >=16.8.
+  - Keep the default entry bundle small (<15 kB gzip); optional datasets and
+  helpers belong in separate entry points.
+  - Accessibility (keyboard + ARIA) is required for any interactive feature.
+  - Every behavior change needs Jest + @testing-library tests and a readme API
+  table update.
+
+# Per-artifact rules.
+rules:
+  proposal:
+    - State whether the change is additive or breaking, and describe the
+      backward-compatibility impact.
+    - State what is explicitly out of scope.
+  tasks:
+    - Include tests and readme/API updates as explicit tasks.
