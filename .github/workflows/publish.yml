@@ -69,9 +69,24 @@ jobs:
         if: steps.package.outputs.published == 'false'
         run: npm ci
 
+      - name: Typecheck
+        if: steps.package.outputs.published == 'false'
+        run: npm run typecheck
+
+      - name: Run tests
+        if: steps.package.outputs.published == 'false'
+        run: npm run test:coverage
+
       - name: Build package
         if: steps.package.outputs.published == 'false'
         run: npm run clean-build
+
+      - name: Verify built package
+        if: steps.package.outputs.published == 'false'
+        run: |
+          npm run test:artifact
+          npm run test:package
+          npm run test:types
 
       # Authenticates via GitHub Actions OIDC (id-token: write above).
       # No NODE_AUTH_TOKEN: this package disallows traditional tokens.

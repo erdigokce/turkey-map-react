@@ -32,13 +32,31 @@ case "$RELEASE_TYPE" in
         ;;
 esac
 
-# Automatic releases should be a no-op when nothing has happened since the
-# last tag, so the pipeline does not create empty version bumps.
+# Automatic releases should be a no-op when nothing that can affect the
+# published package has happened since the last tag. This keeps docs, CI,
+# agent-skill and test-only commits from creating empty patch releases.
 if [ "$RELEASE_TYPE" = "auto" ]; then
     LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || true)
-    if [ -n "$LAST_TAG" ] && [ -z "$(git log --oneline "${LAST_TAG}..HEAD")" ]; then
-        echo -e "${YELLOW}No commits since ${LAST_TAG}; nothing to release.${NC}"
-        exit 0
+    if [ -n "$LAST_TAG" ]; then
+        if [ -z "$(git log --oneline "${LAST_TAG}..HEAD")" ]; then
+            echo -e "${YELLOW}No commits since ${LAST_TAG}; nothing to release.${NC}"
+            exit 0
+        fi
+
+        if git diff --quiet "${LAST_TAG}..HEAD" -- \
+            src \
+            package.json \
+            package-lock.json \
+            tsconfig.json \
+            webpack.config.js \
+            .babelrc \
+            .npmignore \
+            ':(exclude)src/__tests__/**' \
+            ':(exclude)src/**/*.test.ts' \
+            ':(exclude)src/**/*.test.tsx'; then
+            echo -e "${YELLOW}No package-affecting changes since ${LAST_TAG}; nothing to release.${NC}"
+            exit 0
+        fi
     fi
 fi
 
@@ -46,24 +64,28 @@ echo -e "${GREEN}Starting release process...${NC}"
 echo -e "${YELLOW}Release type: ${RELEASE_TYPE}${NC}"
 echo ""
 
-# Step 1: Run tests
-echo -e "${GREEN}Step 1/4: Running tests...${NC}"
-npm test
+# Step 1: Run typecheck and tests
+echo -e "${GREEN}Step 1/4: Running typecheck and tests...${NC}"
+npm run typecheck
+npm run test:coverage
 if [ $? -ne 0 ]; then
     echo -e "${RED}Tests failed! Aborting release.${NC}"
     exit 1
 fi
-echo -e "${GREEN}✓ Tests passed${NC}"
+echo -e "${GREEN}✓ Typecheck and tests passed${NC}"
 echo ""
 
-# Step 2: Create production build
-echo -e "${GREEN}Step 2/4: Creating production build...${NC}"
+# Step 2: Create production build and verify what will be published
+echo -e "${GREEN}Step 2/4: Creating and verifying production build...${NC}"
 npm run clean-build
+npm run test:artifact
+npm run test:package
+npm run test:types
 if [ $? -ne 0 ]; then
-    echo -e "${RED}Build failed! Aborting release.${NC}"
+    echo -e "${RED}Build verification failed! Aborting release.${NC}"
     exit 1
 fi
-echo -e "${GREEN}✓ Production build created${NC}"
+echo -e "${GREEN}✓ Production build and package verified${NC}"
 echo ""
 
 # Step 3: Generate changelog and update version

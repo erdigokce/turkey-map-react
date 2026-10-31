@@ -94,8 +94,8 @@ chore: upgrade dependencies
 ### 1. Release Script (`scripts/release.sh`)
 
 Prepares a new release by:
-1. Running tests
-2. Creating a production build
+1. Running typecheck and tests
+2. Creating a production build and verifying the built artifact and packed package
 3. Generating/updating CHANGELOG.md from conventional commits
 4. Bumping version in package.json
 5. Creating a git tag
@@ -117,7 +117,7 @@ npm run release:major    # major version bump
 
 #### Release Types
 
-- `auto`: Analyze commits since the last tag and pick the bump; no-op if there is nothing new
+- `auto`: Analyze commits since the last tag and pick the bump; no-op if nothing that affects the published package has changed
 - `major`: Breaking changes (1.0.0 → 2.0.0)
 - `minor`: New features (1.0.0 → 1.1.0)
 - `patch`: Bug fixes (1.0.0 → 1.0.1)
@@ -125,8 +125,8 @@ npm run release:major    # major version bump
 
 #### What Happens
 
-1. All tests are run (`npm test`)
-2. Production build is created (`npm run clean-build`)
+1. Typecheck and tests are run (`npm run typecheck`, `npm run test:coverage`)
+2. Production build is created (`npm run clean-build`) and verified (`npm run test:artifact`, `npm run test:package`, `npm run test:types`)
 3. Commits since last release are analyzed
 4. CHANGELOG.md is automatically updated
 5. Version is bumped in package.json
@@ -187,13 +187,13 @@ npm run publish:npm
 - Manual workflow dispatch (for an explicit bump)
 
 On every push to `master` the workflow:
-- Runs all tests and creates a production build
+- Runs typecheck/tests, then creates and verifies the production build
 - Lets conventional commits decide the version bump (`auto`)
 - Generates the changelog and bumps the version
 - Pushes the `chore(release): <version>` commit and tag
 - Creates the GitHub Release
 
-If there is nothing new since the last tag, it exits without creating a release.
+If there is nothing new since the last tag, or only docs/CI/agent-skill/test changes, it exits without creating a release. Changes to `src`, `package.json`, the lockfile, or build configuration do trigger one.
 
 **Manual use:**
 1. Go to GitHub repository → Actions → Release
@@ -269,7 +269,7 @@ Dependabot runs daily at 06:00 Europe/Istanbul and opens grouped PRs:
 - Major updates and `0.x` minor updates: left for manual review.
 - `react`, `react-dom`, and their type packages: major updates are ignored and must be handled manually.
 
-When the auto-merge workflow lands a Dependabot PR, it explicitly dispatches the Release workflow. This is required because a merge performed with `GITHUB_TOKEN` does not emit a push event that other workflows can react to.
+When the auto-merge workflow lands a Dependabot PR, it explicitly dispatches the Release workflow. This is required because a merge performed with `GITHUB_TOKEN` does not emit a push event that other workflows can react to. If the merged update does not touch package inputs (for example, a GitHub Actions-only bump), the release is skipped.
 
 ## Troubleshooting
 
@@ -278,7 +278,10 @@ When the auto-merge workflow lands a Dependabot PR, it explicitly dispatches the
 The release script will abort if tests fail. Fix the failing tests and try again.
 
 ```bash
-# Run tests locally
+# Run every check locally (typecheck, source, artifact, package, types)
+npm run verify
+
+# Run source tests only
 npm test
 
 # Run tests in watch mode
@@ -329,7 +332,7 @@ git commit -m "docs: update README [skip ci]"
 ## Best Practices
 
 1. **Use conventional commits** - This enables automated changelog generation
-2. **Test locally first** - Run `npm test` and `npm run build` before releasing
+2. **Test locally first** - Run `npm run verify` before releasing
 3. **Review changelog** - Always review CHANGELOG.md after running release script
 4. **Keep changelog clean** - Use meaningful commit messages
 5. **Semantic versioning** - Follow semver principles for version bumps

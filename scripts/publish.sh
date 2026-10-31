@@ -36,6 +36,12 @@ PACKAGE_VERSION=$(node -p "require('./package.json').version")
 echo -e "${YELLOW}Publishing version: ${PACKAGE_VERSION}${NC}"
 echo ""
 
+# Build and run every verification layer before publishing.
+echo -e "${GREEN}Running verification...${NC}"
+npm run verify
+echo -e "${GREEN}✓ Verification passed${NC}"
+echo ""
+
 # Ask for confirmation
 read -p "Are you sure you want to publish version ${PACKAGE_VERSION} to npm? Type 'y' to confirm: " -n 1 -r
 echo ""

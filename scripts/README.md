@@ -1,6 +1,6 @@
 # Release and Publish Scripts
 
-This directory contains standalone scripts for releasing and publishing the turkey-map-react package.
+This directory contains standalone scripts for releasing, publishing, and verifying the turkey-map-react package.
 
 ## Scripts
 
@@ -47,6 +47,25 @@ NPM_TOKEN=your_token ./scripts/publish.sh
 # With npm login
 npm login
 ./scripts/publish.sh
+```
+
+## Verification
+
+`npm run verify` builds the package and runs every test layer:
+
+```bash
+npm run verify
+```
+
+Individual layers can be run separately:
+
+```bash
+npm run typecheck       # TypeScript source check
+npm run test:coverage   # source tests with coverage thresholds
+npm run test:artifact   # tests against the built lib/index.js
+npm run test:package    # packs, validates, and installs the package
+npm run test:types      # compiles a TypeScript consumer
+REACT_VERSION=16.8.6 npm run test:compat
 ```
 
 ## npm Scripts

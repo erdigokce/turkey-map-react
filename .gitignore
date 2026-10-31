@@ -3,3 +3,6 @@ node_modules
 lib
 .idea
 .npmrc
+coverage/
+*.tgz
+artifacts/

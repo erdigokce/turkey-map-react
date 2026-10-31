@@ -9,7 +9,12 @@ module.exports = {
   },
   externals: {
     react: 'react',
-    'react-dom': 'react-dom'
+    'react-dom': 'react-dom',
+    // Keep the JSX runtimes external as a safeguard. The build uses the
+    // classic runtime, but this prevents a future preset change from
+    // silently bundling React internals into the published package.
+    'react/jsx-runtime': 'react/jsx-runtime',
+    'react/jsx-dev-runtime': 'react/jsx-dev-runtime'
   },
   resolve: {
     extensions: ['.js', '.ts', '.tsx'],

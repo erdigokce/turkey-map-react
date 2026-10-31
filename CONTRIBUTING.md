@@ -52,24 +52,44 @@ feat!: remove deprecated API
    variables, exposed ports, useful file locations and container parameters.
 3. Follow the commit message convention described above. The versioning is handled automatically
    by the release script based on conventional commits. The versioning scheme we use is [SemVer](http://semver.org/).
-4. Ensure all tests pass by running `npm test`
+4. Ensure all checks pass by running `npm run verify`
 5. You may merge the Pull Request in once you have the sign-off of two other developers, or if you 
    do not have permission to do that, you may request the second reviewer to merge it for you.
+
+### Test layers
+
+`npm run verify` builds the package and runs every layer of the test suite:
+
+- `npm run test:coverage` — source tests with enforced coverage thresholds.
+- `npm run test:artifact` — renders the built `lib/index.js` bundle.
+- `npm run test:package` — packs the package, verifies its contents, and installs
+  it into a temporary consumer project.
+- `npm run test:types` — compiles a TypeScript consumer against the published
+  type declarations.
+- `npm run test:compat` — optional local smoke test for a specific React version
+  (`REACT_VERSION=16.8.6 npm run test:compat`). CI runs it for React 16.8, 17,
+  18, and 19.
 
 ## Dependency Updates
 
 Dependencies are kept up to date automatically:
 
 - **Dependabot** (`.github/dependabot.yml`) checks npm packages and GitHub Actions
-  every Monday and opens pull requests.
-- Minor and patch npm updates are grouped into a single PR per week. Updates to
+  daily and opens pull requests.
+- Minor and patch npm updates are grouped into a single PR per day. Updates to
   `react`, `react-dom` and their type packages never cross a major version
   automatically.
-- **CI** (`.github/workflows/ci.yml`) installs dependencies, runs the test suite
-  and builds the package on every pull request and push to `master`.
+- **CI** (`.github/workflows/ci.yml`) installs dependencies, runs the source test
+  matrix on Node 22/24 and React 18/19, typechecks, builds the package, verifies
+  the built artifact and packed package, and runs React 16.8/17/18/19
+  compatibility smoke tests.
 - **Auto-merge** (`.github/workflows/dependabot-auto-merge.yml`) squash-merges a
   Dependabot PR only after CI passes and only when the update is a patch or a
   minor (non-major) bump.
+
+The artifact and package tests are the safety net for build-tool updates: a
+Babel, webpack, or TypeScript update that breaks the published output fails CI
+even if the source-level tests still pass.
 
 Major version bumps are always opened individually and must be reviewed and
 merged by a maintainer.
