@@ -5,6 +5,61 @@ email, or any other method with the owners of this repository before making a ch
 
 Please note we have a code of conduct, please follow it in all your interactions with the project.
 
+## OpenSpec Change Workflow
+
+Every functional and non-functional change must be tracked as an OpenSpec change
+before implementation starts. This includes features, bug fixes, refactors,
+performance work, accessibility changes, dependency or build-tool updates,
+documentation, and repository tooling. There is no "too small for a change"
+exception: if it modifies the repository, it belongs in OpenSpec.
+
+Changes live in `openspec/changes/<change-name>/` and follow the spec-driven
+schema configured in `openspec/config.yaml`. Each change consists of:
+
+- `proposal.md` — why the change is needed, what changes, whether it is additive
+  or breaking, its backward-compatibility impact, and what is explicitly out of
+  scope.
+- `specs/<capability>/spec.md` — the requirements delta for the affected
+  capability. Reference an existing capability path when modifying one, and
+  create a new one for new behavior.
+- `design.md` — the technical approach and the decisions that shaped it.
+- `tasks.md` — the ordered implementation checklist, including explicit tasks
+  for tests and readme/API updates.
+
+### Workflow
+
+1. **Propose** — create the change and its artifacts. With the OpenSpec CLI:
+   `openspec new change "<change-name>"`, then generate each artifact with
+   `openspec instructions <artifact-id> --change "<change-name>" --json`. In
+   OpenCode, `/opsx-propose` runs the same workflow.
+2. **Review** — get the proposal and specs reviewed before writing code. The
+   plan is the contract for what will be implemented.
+3. **Implement** — work through `tasks.md`, marking each task complete as it
+   lands. In OpenCode, `/opsx-apply` does this. Keep the implementation inside
+   the scope described by the change; if the scope needs to grow, update the
+   artifacts first or open a follow-up change.
+4. **Verify** — run `npm run verify` and complete every task, including tests
+   and documentation updates.
+5. **Archive** — once the change is merged and verified, archive it so its spec
+   deltas are folded into `openspec/specs/`. Use
+   `openspec archive "<change-name>"` or `/opsx-archive`.
+
+### Requirements
+
+- Use a kebab-case, verb-first change name, for example
+  `add-controlled-multi-selection` or `fix-mobile-tooltip-overflow`.
+- Follow the project constraints in `openspec/config.yaml`: backward
+  compatibility is mandatory, new features must be opt-in, the runtime stays
+  dependency-free, and interactive features need accessibility support.
+- A behavior change is not complete without Jest and `@testing-library` tests
+  and a `readme.md` API table update.
+- Emergency security fixes may be implemented first with maintainer approval,
+  but they must still get a retroactive OpenSpec change documenting the
+  behavior and follow-up work.
+
+Pull requests that have no corresponding OpenSpec change will be asked to add
+one before review.
+
 ## Commit Message Convention
 
 This project uses [Conventional Commits](https://www.conventionalcommits.org/) specification for commit messages. This enables automated changelog generation and semantic versioning.
@@ -46,14 +101,17 @@ feat!: remove deprecated API
 
 ## Pull Request Process
 
-1. Ensure any install or build dependencies are removed before the end of the layer when doing a 
+1. Link the pull request to an OpenSpec change and confirm all of its `tasks.md`
+   items are complete. The change name should appear in the PR description.
+2. Ensure any install or build dependencies are removed before the end of the layer when doing a 
    build.
-2. Update the README.md with details of changes to the interface, this includes new environment 
-   variables, exposed ports, useful file locations and container parameters.
-3. Follow the commit message convention described above. The versioning is handled automatically
+3. Update the `readme.md` with details of changes to the interface, this includes new props,
+   callbacks, exported types, and usage examples.
+4. Follow the commit message convention described above. The versioning is handled automatically
    by the release script based on conventional commits. The versioning scheme we use is [SemVer](http://semver.org/).
-4. Ensure all checks pass by running `npm run verify`
-5. You may merge the Pull Request in once you have the sign-off of two other developers, or if you 
+5. Ensure all checks pass by running `npm run verify`
+6. Archive the OpenSpec change after merge so its spec deltas land in `openspec/specs/`.
+7. You may merge the Pull Request in once you have the sign-off of two other developers, or if you 
    do not have permission to do that, you may request the second reviewer to merge it for you.
 
 ### Test layers
