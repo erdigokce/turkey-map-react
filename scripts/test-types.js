@@ -17,6 +17,11 @@ import React from 'react';
 import TurkeyMap, {
   CityType,
   CustomStyleType,
+  OnMaxSelectionReachedCallback,
+  OnSelectCallback,
+  OnSelectionChangeCallback,
+  SelectionMode,
+  SelectionValue,
   ViewBoxType,
 } from 'turkey-map-react';
 
@@ -30,6 +35,9 @@ const city: CityType = {
 const customStyle: CustomStyleType = {
   idleColor: '#444',
   hoverColor: '#dc3522',
+  selectedColor: '#1a73e8',
+  selectedStroke: '#0b3d91',
+  selectedStrokeWidth: 2,
 };
 
 const viewBox: ViewBoxType = {
@@ -40,6 +48,23 @@ const viewBox: ViewBoxType = {
 };
 
 const data: { cities: CityType[] } = { cities: [city] };
+
+const selectionMode: SelectionMode = 'multiple';
+const singleValue: SelectionValue = city.id;
+const multipleValue: SelectionValue = [city.id];
+
+const selectedCityValue: string | null = city.id;
+const selectedCityValues: string[] = [city.id];
+
+const onSelect: OnSelectCallback = (selectedCity) => console.log(selectedCity.plateNumber);
+const onSelectionChange: OnSelectionChangeCallback = (selectedCities) => (
+  console.log(selectedCities.map((selectedCity) => selectedCity.id))
+);
+const onMaxSelectionReached: OnMaxSelectionReachedCallback = (
+  attemptedCity,
+  selectedCities,
+  maxSelection,
+) => console.log(attemptedCity.name, selectedCities.length, maxSelection);
 
 const cityWrapper = (element: React.ReactElement, wrappedCity: CityType) => (
   <g data-city={wrappedCity.id}>{element}</g>
@@ -57,9 +82,58 @@ const App = () => (
     cityWrapper={cityWrapper}
     onHover={(hoveredCity) => console.log(hoveredCity.plateNumber)}
     onClick={(clickedCity) => console.log(clickedCity.name)}
+    selectionMode={selectionMode}
+    selectedCity={selectedCityValue}
+    defaultSelectedCity={city.id}
+    selectedCities={selectedCityValues}
+    defaultSelectedCities={[city.id]}
+    maxSelection={3}
+    onSelect={onSelect}
+    onSelectionChange={onSelectionChange}
+    onMaxSelectionReached={onMaxSelectionReached}
   />
 );
 
+const ControlledSingle = () => (
+  <TurkeyMap
+    data={data}
+    selectionMode="single"
+    selectedCity={typeof singleValue === 'string' ? singleValue : null}
+    onSelect={onSelect}
+    onSelectionChange={onSelectionChange}
+  />
+);
+
+const UncontrolledSingle = () => (
+  <TurkeyMap
+    data={data}
+    selectionMode="single"
+    defaultSelectedCity={city.id}
+    onSelect={onSelect}
+  />
+);
+
+const ControlledMultiple = () => (
+  <TurkeyMap
+    data={data}
+    selectionMode="multiple"
+    selectedCities={Array.isArray(multipleValue) ? multipleValue : []}
+    maxSelection={3}
+    onSelectionChange={onSelectionChange}
+    onMaxSelectionReached={onMaxSelectionReached}
+  />
+);
+
+const UncontrolledMultiple = () => (
+  <TurkeyMap
+    data={data}
+    selectionMode="multiple"
+    defaultSelectedCities={selectedCityValues}
+    onSelectionChange={onSelectionChange}
+  />
+);
+
+export { ControlledMultiple, ControlledSingle, UncontrolledMultiple, UncontrolledSingle };
 export default App;
 `;
 
