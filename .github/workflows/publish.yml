@@ -1,6 +1,13 @@
 name: Publish to npm
 
 on:
+  # Triggered by the Release workflow. `workflow_run` is used instead of
+  # `on: release` / `on: push: tags` because events created with the default
+  # GITHUB_TOKEN do not trigger other workflows.
+  workflow_run:
+    workflows: ["Release"]
+    types:
+      - completed
   workflow_dispatch:
     inputs:
       confirm:
@@ -10,20 +17,47 @@ on:
 
 permissions:
   contents: read
-  id-token: write
+
+concurrency:
+  group: publish-npm
+  cancel-in-progress: false
 
 jobs:
   publish:
     runs-on: ubuntu-latest
-    if: inputs.confirm == 'publish'
-    
+    permissions:
+      contents: read
+      id-token: write
+    if: >
+      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success') ||
+      (github.event_name == 'workflow_dispatch' && inputs.confirm == 'publish')
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v7
         with:
+          ref: ${{ github.event.workflow_run.head_branch || github.ref }}
           fetch-depth: 0
-      
+
+      # A successful Release run can also be a no-op (no commits since the last
+      # tag). Skip cleanly when that version is already on npm.
+      - name: Resolve version and check npm
+        id: package
+        run: |
+          set -euo pipefail
+
+          VERSION=$(node -p "require('./package.json').version")
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+          if npm view "turkey-map-react@$VERSION" version >/dev/null 2>&1; then
+            echo "published=true" >> "$GITHUB_OUTPUT"
+            echo "turkey-map-react@$VERSION is already published; skipping."
+          else
+            echo "published=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Setup Node.js
+        if: steps.package.outputs.published == 'false'
         uses: actions/setup-node@v7
         with:
           # Node 24 ships npm >= 11.5.1, required for OIDC trusted publishing
@@ -32,24 +66,31 @@ jobs:
           package-manager-cache: false
 
       - name: Install dependencies
+        if: steps.package.outputs.published == 'false'
         run: npm ci
-      
+
       - name: Build package
+        if: steps.package.outputs.published == 'false'
         run: npm run clean-build
-      
+
       # Authenticates via GitHub Actions OIDC (id-token: write above).
       # No NODE_AUTH_TOKEN: this package disallows traditional tokens.
       - name: Publish to npm
+        if: steps.package.outputs.published == 'false'
         run: npm publish
-      
-      - name: Get package version
-        id: package-version
-        run: echo "version=$(node -p "require('./package.json').version")" >> $GITHUB_OUTPUT
-      
+
       - name: Create success summary
+        if: steps.package.outputs.published == 'false'
         run: |
-          echo "## ✅ Package Published Successfully" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Package:** turkey-map-react@${{ steps.package-version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**npm:** https://www.npmjs.com/package/turkey-map-react" >> $GITHUB_STEP_SUMMARY
+          echo "## ✅ Package Published Successfully" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "**Package:** turkey-map-react@${{ steps.package.outputs.version }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "**npm:** https://www.npmjs.com/package/turkey-map-react" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Create already-published summary
+        if: steps.package.outputs.published == 'true'
+        run: |
+          echo "## ℹ️ Version already published" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "turkey-map-react@${{ steps.package.outputs.version }} already exists on npm; nothing to do." >> "$GITHUB_STEP_SUMMARY"

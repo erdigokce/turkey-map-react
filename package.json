@@ -11,6 +11,7 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "release": "./scripts/release.sh",
+    "release:auto": "./scripts/release.sh auto",
     "release:major": "./scripts/release.sh major",
     "release:minor": "./scripts/release.sh minor",
     "release:patch": "./scripts/release.sh patch",

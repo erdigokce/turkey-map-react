@@ -12,6 +12,8 @@ on:
 permissions:
   contents: write
   pull-requests: write
+  # Needed to dispatch the Release workflow after a Dependabot merge.
+  actions: write
 
 jobs:
   auto-merge:
@@ -99,6 +101,7 @@ jobs:
           echo "safe=true" >> "$GITHUB_OUTPUT"
 
       - name: Merge pull request
+        id: merge
         if: steps.update.outputs.safe == 'true'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -108,6 +111,44 @@ jobs:
 
           # Merge directly once CI has passed. If branch protection rules ask
           # for something extra (e.g. a review), fall back to enabling
-          # auto-merge so the PR lands as soon as requirements are met.
-          gh pr merge "$PR_URL" --squash --delete-branch \
-            || gh pr merge "$PR_URL" --auto --squash --delete-branch
+          # auto-merge and wait for the platform to land it.
+          merged=false
+          if gh pr merge "$PR_URL" --squash --delete-branch; then
+            merged=true
+          else
+            gh pr merge "$PR_URL" --auto --squash --delete-branch
+            for _ in $(seq 1 20); do
+              state=$(gh pr view "$PR_URL" --json state --jq .state)
+              if [ "$state" = "MERGED" ]; then
+                merged=true
+                break
+              fi
+              if [ "$state" = "CLOSED" ]; then
+                break
+              fi
+              sleep 15
+            done
+          fi
+
+          echo "merged=$merged" >> "$GITHUB_OUTPUT"
+
+      # A merge performed with GITHUB_TOKEN does not emit a push event, so the
+      # push-triggered Release workflow would never run. workflow_dispatch is
+      # explicitly exempt from that restriction.
+      - name: Trigger release
+        if: steps.merge.outputs.merged == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          for _ in $(seq 1 5); do
+            if gh workflow run release.yml --ref master -f release_type=auto; then
+              echo "Release workflow dispatched."
+              exit 0
+            fi
+            sleep 5
+          done
+
+          echo "Could not dispatch the Release workflow." >&2
+          exit 1

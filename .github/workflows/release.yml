@@ -1,68 +1,116 @@
 name: Release
 
 on:
+  push:
+    branches:
+      - master
   workflow_dispatch:
     inputs:
       release_type:
         description: 'Release type'
         required: true
-        default: 'patch'
+        default: 'auto'
         type: choice
         options:
+          - auto
           - major
           - minor
           - patch
           - prerelease
 
+permissions:
+  contents: write
+
+# Serialize releases. If two merges land close together, the second run waits
+# for the first to finish and then normally finds nothing new to release.
+concurrency:
+  group: release
+  cancel-in-progress: false
+
 jobs:
   release:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    
+
+    # Never release the version-bump commit itself. Pushes made with
+    # GITHUB_TOKEN do not trigger workflows anyway, but a manual push or a PAT
+    # would otherwise create an infinite release loop.
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      !startsWith(github.event.head_commit.message, 'chore(release):')
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v7
         with:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
-      
+
       - name: Setup Node.js
         uses: actions/setup-node@v7
         with:
           node-version: '22'
           cache: 'npm'
-      
+
       - name: Configure Git
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-      
+
       - name: Install dependencies
         run: npm ci
-      
+
+      - name: Record HEAD before release
+        id: before
+        run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
       - name: Run release script
-        run: ./scripts/release.sh ${{ inputs.release_type }}
-      
-      - name: Push changes and tags
+        env:
+          RELEASE_TYPE: ${{ inputs.release_type || 'auto' }}
+        run: ./scripts/release.sh "$RELEASE_TYPE"
+
+      - name: Detect created release
+        id: release
         run: |
-          git push --follow-tags origin ${{ github.ref_name }}
-      
+          set -euo pipefail
+          if [ "$(git rev-parse HEAD)" = "${{ steps.before.outputs.sha }}" ]; then
+            echo "created=false" >> "$GITHUB_OUTPUT"
+            echo "No release commit was created; nothing to push."
+          else
+            echo "created=true" >> "$GITHUB_OUTPUT"
+            echo "tag=$(git describe --tags --abbrev=0)" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Push changes and tags
+        if: steps.release.outputs.created == 'true'
+        run: git push --follow-tags origin "HEAD:${{ github.ref_name }}"
+
       - name: Create GitHub Release
+        if: steps.release.outputs.created == 'true'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG_NAME: ${{ steps.release.outputs.tag }}
         run: |
-          TAG_NAME=$(git describe --tags --abbrev=0)
-          CHANGELOG_CONTENT=$(awk -v ver="$TAG_NAME" '
-            $0 ~ "## \\[?"ver {found=1; next} 
-            /^## \[?[0-9]/ && found {exit} 
+          set -euo pipefail
+
+          # Changelog headings use the bare version, while tags are prefixed
+          # with "v" by commit-and-tag-version.
+          CHANGELOG_VERSION=${TAG_NAME#v}
+
+          CHANGELOG_CONTENT=$(awk -v ver="$CHANGELOG_VERSION" '
+            $0 ~ "## \\[?"ver {found=1; next}
+            /^## \[?[0-9]/ && found {exit}
             found {print}
           ' CHANGELOG.md | sed '/^$/d')
-          
+
           if [ -z "$CHANGELOG_CONTENT" ]; then
             CHANGELOG_CONTENT="Release $TAG_NAME"
           fi
-          
+
+          if gh release view "$TAG_NAME" >/dev/null 2>&1; then
+            echo "GitHub Release $TAG_NAME already exists; skipping."
+            exit 0
+          fi
+
           gh release create "$TAG_NAME" \
             --title "$TAG_NAME" \
             --notes "$CHANGELOG_CONTENT" \

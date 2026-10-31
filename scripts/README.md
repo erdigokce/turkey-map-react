@@ -14,6 +14,7 @@ Prepares a new release by running tests, building, generating changelog, and upd
 ```
 
 **Release types:**
+- `auto` - Let conventional commits decide the bump; no-op if there is nothing new (used by the automated workflow)
 - `major` - Breaking changes (1.0.0 → 2.0.0)
 - `minor` - New features (1.0.0 → 1.1.0)
 - `patch` - Bug fixes (default, 1.0.0 → 1.0.1)
@@ -21,6 +22,9 @@ Prepares a new release by running tests, building, generating changelog, and upd
 
 **Example:**
 ```bash
+# Automatic bump (used by the Release workflow)
+./scripts/release.sh auto
+
 # Patch release (default)
 ./scripts/release.sh
 
@@ -52,6 +56,7 @@ These scripts can also be run via npm:
 ```bash
 # Release
 npm run release          # patch release
+npm run release:auto     # automatic bump from conventional commits
 npm run release:patch    # patch release (explicit)
 npm run release:minor    # minor release
 npm run release:major    # major release

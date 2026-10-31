@@ -5,8 +5,7 @@ updates:
   - package-ecosystem: "npm"
     directory: "/"
     schedule:
-      interval: "weekly"
-      day: "monday"
+      interval: "daily"
       time: "06:00"
       timezone: "Europe/Istanbul"
     open-pull-requests-limit: 10
@@ -26,7 +25,7 @@ updates:
           - "@babel/*"
         update-types:
           - "major"
-      # Minor and patch updates arrive as a single PR per week.
+      # Minor and patch updates arrive as a single PR per day.
       # Other major updates are deliberately excluded and opened individually
       # so they always get a manual review (they are never auto-merged).
       minor-and-patch:
@@ -55,8 +54,7 @@ updates:
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
-      interval: "weekly"
-      day: "monday"
+      interval: "daily"
       time: "06:00"
       timezone: "Europe/Istanbul"
     open-pull-requests-limit: 5

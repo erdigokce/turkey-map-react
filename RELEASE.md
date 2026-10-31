@@ -4,10 +4,20 @@ This document describes the automated build, test, and release pipeline for the 
 
 ## Overview
 
-The release process is automated using standalone scripts that can be run independently or through GitHub Actions. The pipeline consists of two main scripts:
+The release process is automated using standalone scripts that can be run independently or through GitHub Actions. The pipeline has two stages:
 
-1. **Release Script** (`scripts/release.sh`) - Prepares a release
-2. **Publish Script** (`scripts/publish.sh`) - Publishes the package to npm
+1. **Release** (`scripts/release.sh`) - Runs tests/build, updates the changelog, bumps the version, commits, tags, and pushes.
+2. **Publish** (`scripts/publish.sh` / the Publish workflow) - Publishes the tagged version to npm.
+
+Merging to `master` starts the release automatically:
+
+```
+merge/push to master
+  └─ Release workflow (auto bump, changelog, commit, tag, GitHub Release)
+       └─ Publish workflow (npm publish via OIDC trusted publishing)
+```
+
+The Release workflow can still be triggered manually (Actions → Release → Run workflow), and the Publish workflow can be triggered manually (Actions → Publish to npm → Run workflow).
 
 ## Prerequisites
 
@@ -19,10 +29,15 @@ The release process is automated using standalone scripts that can be run indepe
 
 ### For GitHub Actions
 
-- `NPM_TOKEN` secret configured in repository settings (for publishing to npm)
-  - Go to GitHub repository → Settings → Secrets and variables → Actions
-  - Create a new repository secret named `NPM_TOKEN`
-  - Get your npm token from https://www.npmjs.com/settings/[username]/tokens
+- **npm trusted publishing** configured on npmjs.com for this repository:
+  - Publisher: GitHub Actions
+  - Repository: `erdigokce/turkey-map-react`
+  - Workflow filename: `publish.yml`
+  - No `NPM_TOKEN` secret is required; the Publish workflow authenticates with OIDC.
+- **Allow auto-merge** enabled in Settings → General (so Dependabot PRs can land).
+- The GitHub Actions bot must be allowed to push the version-bump commit to `master` (branch protection must not block it).
+- Repository setting: Actions → General → Workflow permissions must allow read/write (the workflows request `contents: write` explicitly).
+
 
 ## Conventional Commits
 
@@ -88,10 +103,12 @@ Prepares a new release by:
 #### Usage
 
 ```bash
-# Run with default (patch) version bump
-./scripts/release.sh
+# Let conventional commits decide the bump (used by the automated workflow)
+./scripts/release.sh auto
+npm run release:auto
 
-# Or use npm scripts
+# Run with an explicit bump
+./scripts/release.sh patch
 npm run release          # patch version bump
 npm run release:patch    # explicit patch version bump
 npm run release:minor    # minor version bump
@@ -100,6 +117,7 @@ npm run release:major    # major version bump
 
 #### Release Types
 
+- `auto`: Analyze commits since the last tag and pick the bump; no-op if there is nothing new
 - `major`: Breaking changes (1.0.0 → 2.0.0)
 - `minor`: New features (1.0.0 → 1.1.0)
 - `patch`: Bug fixes (1.0.0 → 1.0.1)
@@ -115,14 +133,14 @@ npm run release:major    # major version bump
 6. Changes are committed with message: `chore(release): [version]`
 7. Git tag is created
 
-After the script completes:
+After the script completes locally:
 ```bash
 # Review the changes
 git log -1
 cat CHANGELOG.md
 
 # Push to remote
-git push --follow-tags origin main
+git push --follow-tags origin master
 ```
 
 ### 2. Publish Script (`scripts/publish.sh`)
@@ -160,45 +178,51 @@ npm run publish:npm
 
 ## GitHub Actions Workflows
 
-### Manual Release Workflow
+### Automatic Release Workflow
 
 **File:** `.github/workflows/release.yml`
 
-**Trigger:** Manual workflow dispatch
+**Triggers:**
+- Push to `master` (including merged pull requests)
+- Manual workflow dispatch (for an explicit bump)
 
-**Steps:**
+On every push to `master` the workflow:
+- Runs all tests and creates a production build
+- Lets conventional commits decide the version bump (`auto`)
+- Generates the changelog and bumps the version
+- Pushes the `chore(release): <version>` commit and tag
+- Creates the GitHub Release
+
+If there is nothing new since the last tag, it exits without creating a release.
+
+**Manual use:**
 1. Go to GitHub repository → Actions → Release
 2. Click "Run workflow"
-3. Select release type (major, minor, patch, or prerelease)
+3. Select a release type (`auto`, `major`, `minor`, `patch`, or `prerelease`)
 4. Click "Run workflow"
 
-The workflow will:
-- Run all tests
-- Create production build
-- Generate changelog
-- Bump version
-- Push changes and tags
-- Create GitHub Release
-
-### Manual Publish Workflow
+### Automatic Publish Workflow
 
 **File:** `.github/workflows/publish.yml`
 
-**Trigger:** Manual workflow dispatch
+**Triggers:**
+- Completion of the Release workflow (`workflow_run`)
+- Manual workflow dispatch
 
-**Configuration Required:** `NPM_TOKEN` secret must be set in repository settings
+**Configuration Required:** npm trusted publishing configured for `publish.yml`. No `NPM_TOKEN` is needed.
 
-**Steps:**
+The workflow checks whether the current version is already on npm and skips if it is. Otherwise it:
+- Builds the package
+- Publishes to npm with OIDC
+- Creates a success summary
+
+**Manual use:**
 1. Go to GitHub repository → Actions → Publish to npm
 2. Click "Run workflow"
 3. Type "publish" to confirm
 4. Click "Run workflow"
 
-The workflow will:
-- Build the package
-- Run tests
-- Publish to npm
-- Create success summary
+> Note: the Release workflow deliberately uses `workflow_run` to invoke publishing. GitHub does not trigger workflows from tags, releases, or pushes made with the default `GITHUB_TOKEN`.
 
 ## Complete Release Flow
 
@@ -208,24 +232,15 @@ The workflow will:
    ```bash
    git commit -m "feat: add new feature"
    git commit -m "fix: resolve bug"
-   git push origin main
+   git push origin master
    ```
 
-2. **Create release** (via GitHub Actions)
-   - Go to Actions → Release → Run workflow
-   - Select release type
-   - Wait for completion
+2. **Merge the pull request** (Dependabot PRs with safe updates do this automatically).
 
-3. **Verify release**
-   - Check GitHub Releases page
-   - Review CHANGELOG.md
-   - Verify version in package.json
-
-4. **Publish to npm** (via GitHub Actions)
-   - Go to Actions → Publish to npm → Run workflow
-   - Type "publish" to confirm
-   - Wait for completion
-   - Verify on npm: https://www.npmjs.com/package/turkey-map-react
+3. **Release and publish run automatically**
+   - Release workflow bumps, tags, and creates the GitHub Release
+   - Publish workflow publishes the new version to npm
+   - Verify the GitHub Releases page and https://www.npmjs.com/package/turkey-map-react
 
 ### Alternative: Local Release and Publish
 
@@ -238,11 +253,23 @@ git log -1
 cat CHANGELOG.md
 
 # 3. Push to GitHub
-git push --follow-tags origin main
+git push --follow-tags origin master
 
 # 4. Publish to npm
 NPM_TOKEN=your_token npm run publish:npm
 ```
+
+### Dependency updates
+
+Dependabot runs daily at 06:00 Europe/Istanbul and opens grouped PRs:
+
+- Grouped npm minor/patch updates: auto-merged after CI passes.
+- Grouped GitHub Actions minor/patch updates: auto-merged after CI passes.
+- Individual non-major updates (for example security fixes): auto-merged after CI passes.
+- Major updates and `0.x` minor updates: left for manual review.
+- `react`, `react-dom`, and their type packages: major updates are ignored and must be handled manually.
+
+When the auto-merge workflow lands a Dependabot PR, it explicitly dispatches the Release workflow. This is required because a merge performed with `GITHUB_TOKEN` does not emit a push event that other workflows can react to.
 
 ## Troubleshooting
 
@@ -269,23 +296,23 @@ npm run clean-build
 
 ### Publish Fails - Authentication Error
 
-Ensure NPM_TOKEN is correctly set:
-```bash
-# Verify token is set
-echo $NPM_TOKEN
+In GitHub Actions, authentication uses OIDC trusted publishing, not a token. Check:
 
-# Or login manually
-npm login
-```
+1. The trusted publisher on npmjs.com points at workflow filename `publish.yml` (exact filename, including `.yml`).
+2. The publish job has `id-token: write` (it does).
+3. `package.json`'s `repository.url` matches the GitHub repository exactly.
+4. The workflow runs on Node 24+ so npm is at least 11.5.1.
+
+For local publishing, log in with `npm login` or set `NPM_TOKEN`.
 
 ### Publish Fails - Version Already Exists
 
-The version already exists on npm. You need to create a new release with a bumped version.
+The version already exists on npm. The Publish workflow detects this and skips automatically. To publish a new version, create a release with a bump:
 
 ```bash
 # Create a new patch release
 npm run release:patch
-git push --follow-tags origin main
+git push --follow-tags origin master
 
 # Then publish again
 npm run publish:npm
