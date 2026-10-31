@@ -51,6 +51,98 @@ On mouse over example:
 />
 ```
 
+### Selecting cities
+
+Selection is opt-in through `selectionMode` (`"none"` by default). Both controlled and uncontrolled forms are available.
+
+Single selection, uncontrolled:
+
+```javascript
+<TurkeyMap
+  selectionMode="single"
+  defaultSelectedCity="istanbul"
+  onSelectionChange={(cities) => console.log(cities.map((city) => city.id))}
+/>
+```
+
+Single selection, controlled (`null` clears the selection):
+
+```javascript
+const [cityId, setCityId] = useState(null);
+
+<TurkeyMap
+  selectionMode="single"
+  selectedCity={cityId}
+  onSelectionChange={([city]) => setCityId(city ? city.id : null)}
+/>
+```
+
+Multiple selection, controlled, with a limit:
+
+```javascript
+const [cityIds, setCityIds] = useState(['ankara', 'istanbul']);
+
+<TurkeyMap
+  selectionMode="multiple"
+  selectedCities={cityIds}
+  maxSelection={3}
+  onSelectionChange={(cities) => setCityIds(cities.map((city) => city.id))}
+  onMaxSelectionReached={(city, selectedCities, maxSelection) => {
+    console.log(`${city.name} was not added; ${selectedCities.length}/${maxSelection} selected`);
+  }}
+/>
+```
+
+Use `defaultSelectedCities` for uncontrolled multiple selection. `selectedCity`, `selectedCities`, `defaultSelectedCity`, and `defaultSelectedCities` are primitive id values, so they can be bound directly to a form field. `onSelect` receives the full `CityType` for the city that was just selected; `onSelectionChange` always receives the complete selection as an array (zero or one item in single mode).
+
+Selected cities use `selectedColor`, `selectedStroke`, and `selectedStrokeWidth` from `customStyle`:
+
+```javascript
+<TurkeyMap
+  selectionMode="single"
+  selectedCity="ankara"
+  customStyle={{
+    idleColor: '#444',
+    hoverColor: '#dc3522',
+    selectedColor: '#1a73e8',
+    selectedStroke: '#0b3d91',
+    selectedStrokeWidth: 2,
+  }}
+/>
+```
+
+When `maxSelection` is reached, additional selections are ignored and `onSelectionChange` does not fire. Removing a selected city is always allowed. If `onMaxSelectionReached` is not supplied, development builds log a `console.warn`. Invalid limits (zero, negative, or non-integers) are ignored with a development warning.
+
+### Form integration
+
+The selection value is a plain id (or `null`) for single mode and an id array for multiple mode:
+
+```javascript
+// react-hook-form
+const { field } = useController({ name: 'province' });
+
+<TurkeyMap
+  selectionMode="single"
+  selectedCity={field.value ?? null}
+  onSelectionChange={([city]) => field.onChange(city ? city.id : null)}
+/>
+```
+
+```javascript
+// Formik
+<Field name="province">
+  {({ field, form }) => (
+    <TurkeyMap
+      selectionMode="single"
+      selectedCity={field.value ?? null}
+      onSelectionChange={([city]) => form.setFieldValue('province', city ? city.id : null)}
+    />
+  )}
+</Field>
+```
+
+For server actions, submit the same primitive value (`string | null` or `string[]`). When you need full city metadata, map the callbacks with `cities.map((city) => city.id)` or read the entries directly.
+
 ### City component wrapping
 
 ```javascript
@@ -91,26 +183,40 @@ in other words :
 
 ### Types
 
-| Type              | Description                                                                             |
-| :---------------- | :-------------------------------------------------------------------------------------- |
-| *CityType*        | { **id**: *string*, **plateNumber**: *number*, **name**: *string*, **path**: *string* } |
-| *ViewBoxType*     | { **top**: *number*, **left**: *number*, **width**: *number*, **height**: *number* }    |
-| *CustomStyleType* | { **idleColor**: *string*, **hoverColor**: *string* }                                   |
+| Type                             | Description                                                                                                                  |
+| :------------------------------- | :--------------------------------------------------------------------------------------------------------------------------- |
+| *CityType*                       | { **id**: *string*, **plateNumber**: *number*, **name**: *string*, **path**: *string* }                                      |
+| *ViewBoxType*                    | { **top**: *number*, **left**: *number*, **width**: *number*, **height**: *number* }                                         |
+| *CustomStyleType*                | { **idleColor**: *string*, **hoverColor**: *string*, **selectedColor**?: *string*, **selectedStroke**?: *string*, **selectedStrokeWidth**?: *number* } |
+| *SelectionMode*                  | `"none" \| "single" \| "multiple"`                                                                                           |
+| *SelectionValue*                 | `string \| string[] \| null`                                                                                                 |
+| *OnSelectCallback*               | ( **city**: *CityType* ) => *void*                                                                                           |
+| *OnSelectionChangeCallback*      | ( **cities**: *CityType*[] ) => *void*                                                                                       |
+| *OnMaxSelectionReachedCallback*  | ( **city**: *CityType*, **selectedCities**: *CityType*[], **maxSelection**: *number* ) => *void*                              |
 
 ### props
 
-| Property    | Description                                                | Type                                                                         | Default                                                                | Since |
-| :---------- | :--------------------------------------------------------- | :--------------------------------------------------------------------------- | :--------------------------------------------------------------------- | ----: |
-| viewBox     | Position and dimension information of the map (svg) layout | *ViewBoxType*                                                                | { **top**: *0*, **left**: *80*, **width**: *1050*, **height**: *585* } | 1.0.0 |
-| visible     | Defines the visibility of the component                    | *boolean*                                                                    | *true*                                                                 | 1.0.0 |
-| hoverable   | Enables *onHover* event availability                       | *boolean*                                                                    | *true*                                                                 | 1.0.0 |
-| showTooltip | Displays default tooltip if set to true                    | *boolean*                                                                    | *false*                                                                | 1.1.0 |
-| tooltipText | Sets custom text to default tooltip                        | *string*                                                                     | *City Name*                                                                  | 1.1.0 |
-| customStyle | Stylizing the component.                                   | *CustomStyleType*[]                                                          | { **idleColor**: *#444*, **hoverColor**: *#dc3522* }                   | 1.0.0 |
-| data        | Allows for providing custom SVG paths and metadata.        | *CityType*[]                                                                 | *Built-in data*                                                        | 1.0.0 |
-| cityWrapper | City DOMs are wrapped by provided component.               | ( **cityComponent**: *JSX.Element*, **city** : *CityType* ) => *JSX.Element* | *Unwrapped city*                                                       | 1.0.0 |
-| onHover     | Event when a city hovered on the map.                      | ( **city** : *CityType* ) => *void*                                          | -                                                                      | 1.0.0 |
-| onClick     | Event when a city clicked on the map                       | ( **city** : *CityType* ) => *void*                                          | -                                                                      | 1.0.0 |
+| Property             | Description                                                                 | Type                                                                         | Default                                                                | Since |
+| :------------------- | :-------------------------------------------------------------------------- | :--------------------------------------------------------------------------- | :--------------------------------------------------------------------- | ----: |
+| viewBox              | Position and dimension information of the map (svg) layout                  | *ViewBoxType*                                                                | { **top**: *0*, **left**: *80*, **width**: *1050*, **height**: *585* } | 1.0.0 |
+| visible              | Defines the visibility of the component                                     | *boolean*                                                                    | *true*                                                                 | 1.0.0 |
+| hoverable            | Enables *onHover* event availability                                        | *boolean*                                                                    | *true*                                                                 | 1.0.0 |
+| showTooltip          | Displays default tooltip if set to true                                     | *boolean*                                                                    | *false*                                                                | 1.1.0 |
+| tooltipText          | Sets custom text to default tooltip                                         | *string*                                                                     | *City Name*                                                            | 1.1.0 |
+| customStyle          | Stylizing the component.                                                    | *CustomStyleType*[]                                                          | { **idleColor**: *#444*, **hoverColor**: *#dc3522* }                   | 1.0.0 |
+| data                 | Allows for providing custom SVG paths and metadata.                         | *CityType*[]                                                                 | *Built-in data*                                                        | 1.0.0 |
+| cityWrapper          | City DOMs are wrapped by provided component.                                | ( **cityComponent**: *JSX.Element*, **city** : *CityType* ) => *JSX.Element* | *Unwrapped city*                                                       | 1.0.0 |
+| onHover              | Event when a city hovered on the map.                                       | ( **city** : *CityType* ) => *void*                                          | -                                                                      | 1.0.0 |
+| onClick              | Event when a city clicked on the map                                        | ( **city** : *CityType* ) => *void*                                          | -                                                                      | 1.0.0 |
+| selectionMode        | Enables single or multiple selection. `onClick` / `onHover` still fire.     | *SelectionMode*                                                              | *"none"*                                                               | 2.2.0 |
+| selectedCity         | Controlled single selection id, or `null` to clear it.                      | *string \| null*                                                             | -                                                                      | 2.2.0 |
+| defaultSelectedCity  | Initial uncontrolled single selection id.                                   | *string*                                                                     | -                                                                      | 2.2.0 |
+| selectedCities       | Controlled multiple selection ids. An empty array clears the selection.     | *string*[]                                                                   | -                                                                      | 2.2.0 |
+| defaultSelectedCities| Initial uncontrolled multiple selection ids.                                | *string*[]                                                                   | -                                                                      | 2.2.0 |
+| maxSelection         | Caps the number of selected cities in multiple mode.                        | *number*                                                                     | -                                                                      | 2.2.0 |
+| onSelect             | Fires with the full city when an activation selects it.                     | *OnSelectCallback*                                                           | -                                                                      | 2.2.0 |
+| onSelectionChange    | Fires with the complete selection whenever it changes.                      | *OnSelectionChangeCallback*                                                  | -                                                                      | 2.2.0 |
+| onMaxSelectionReached| Fires when an addition would exceed `maxSelection`.                         | *OnMaxSelectionReachedCallback*                                              | -                                                                      | 2.2.0 |
 
 ### Styling
 
