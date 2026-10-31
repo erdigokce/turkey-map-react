@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [2.1.3](https://github.com/erdigokce/turkey-map-react/compare/v2.1.2...v2.1.3) (2026-10-31)
+
+### Bug Fixes
+
+* **ci:** parse npm pack JSON after prepare output ([d6cda3b](https://github.com/erdigokce/turkey-map-react/commit/d6cda3bbe774995354b9dd5f9cf30ac6882f46af))
+
+### Tests
+
+* add comprehensive tests for TurkeyMap component ([f960010](https://github.com/erdigokce/turkey-map-react/commit/f9600103f9f8a1d3fa8e6007fa8de54bdd3c1cf7))
+
 ## [2.1.2](https://github.com/erdigokce/turkey-map-react/compare/v2.1.1...v2.1.2) (2026-10-31)
 
 ## [2.1.1](https://github.com/erdigokce/turkey-map-react/compare/v2.1.0...v2.1.1) (2026-10-31)
