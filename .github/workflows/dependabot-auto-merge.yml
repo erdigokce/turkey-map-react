@@ -1,13 +1,15 @@
 name: Dependabot Auto Merge
 
-# Runs after the CI workflow finishes for a pull request. Only Dependabot PRs
-# that passed CI are considered, and major version bumps are always left for a
-# human to review and merge.
+# Runs after the CI workflow finishes for a Dependabot branch. Filtering at the
+# trigger level keeps this workflow from being created after every CI run on
+# master; the job-level guard below is a second line of defence.
 on:
   workflow_run:
     workflows: ["CI"]
     types:
       - completed
+    branches:
+      - 'dependabot/**'
 
 permissions:
   contents: write
