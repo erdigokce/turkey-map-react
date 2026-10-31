@@ -19,9 +19,16 @@ updates:
     labels:
       - "dependencies"
     groups:
+      # Babel packages must be major-upgraded together, so keep them in one
+      # PR instead of several conflicting ones. Never auto-merged.
+      babel-major:
+        patterns:
+          - "@babel/*"
+        update-types:
+          - "major"
       # Minor and patch updates arrive as a single PR per week.
-      # Major updates are deliberately excluded and opened individually so
-      # they always get a manual review (they are never auto-merged).
+      # Other major updates are deliberately excluded and opened individually
+      # so they always get a manual review (they are never auto-merged).
       minor-and-patch:
         patterns:
           - "*"

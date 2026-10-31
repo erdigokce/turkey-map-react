@@ -1,6 +1,6 @@
 import React, { useState, useCallback, MouseEventHandler } from 'react';
 import Tooltip from './Tooltip';
-import { Property } from 'csstype';
+import type { Property } from 'csstype';
 import { cities } from './data';
 
 type Data = {
