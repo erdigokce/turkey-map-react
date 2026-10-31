@@ -9,15 +9,16 @@ The release process is automated using standalone scripts that can be run indepe
 1. **Release** (`scripts/release.sh`) - Runs tests/build, updates the changelog, bumps the version, commits, tags, and pushes.
 2. **Publish** (`scripts/publish.sh` / the Publish workflow) - Publishes the tagged version to npm.
 
-Merging to `master` starts the release automatically:
+Changes accumulate on `master` and are released once a day:
 
 ```
-merge/push to master
-  └─ Release workflow (auto bump, changelog, commit, tag, GitHub Release)
-       └─ Publish workflow (npm publish via OIDC trusted publishing)
+daily schedule (07:30 Europe/Istanbul)
+  └─ Release workflow (skip if nothing package-affecting changed)
+       └─ auto bump, changelog, commit, tag, GitHub Release
+            └─ Publish workflow (npm publish via OIDC trusted publishing)
 ```
 
-The Release workflow can still be triggered manually (Actions → Release → Run workflow), and the Publish workflow can be triggered manually (Actions → Publish to npm → Run workflow).
+If the daily run finds nothing that affects the published package, it exits without creating a release. The Release workflow can still be triggered manually (Actions → Release → Run workflow), and the Publish workflow can be triggered manually (Actions → Publish to npm → Run workflow).
 
 ## Prerequisites
 
@@ -183,10 +184,11 @@ npm run publish:npm
 **File:** `.github/workflows/release.yml`
 
 **Triggers:**
-- Push to `master` (including merged pull requests)
+- Daily schedule at 04:30 UTC (07:30 Europe/Istanbul)
 - Manual workflow dispatch (for an explicit bump)
 
-On every push to `master` the workflow:
+On the daily scheduled run the workflow:
+- Checks whether anything package-affecting changed since the last tag; exits early if not
 - Runs typecheck/tests, then creates and verifies the production build
 - Lets conventional commits decide the version bump (`auto`)
 - Generates the changelog and bumps the version
@@ -194,6 +196,8 @@ On every push to `master` the workflow:
 - Creates the GitHub Release
 
 If there is nothing new since the last tag, or only docs/CI/agent-skill/test changes, it exits without creating a release. Changes to `src`, `package.json`, the lockfile, or build configuration do trigger one.
+
+If another commit lands on `master` while a release run is in progress, that run skips instead of racing; the next daily run picks up the change.
 
 **Manual use:**
 1. Go to GitHub repository → Actions → Release
@@ -237,10 +241,12 @@ The workflow checks whether the current version is already on npm and skips if i
 
 2. **Merge the pull request** (Dependabot PRs with safe updates do this automatically).
 
-3. **Release and publish run automatically**
-   - Release workflow bumps, tags, and creates the GitHub Release
+3. **Wait for the daily release run** (07:30 Europe/Istanbul)
+   - Release workflow bumps, tags, and creates the GitHub Release if package inputs changed
    - Publish workflow publishes the new version to npm
    - Verify the GitHub Releases page and https://www.npmjs.com/package/turkey-map-react
+
+You can also trigger it immediately from Actions → Release → Run workflow.
 
 ### Alternative: Local Release and Publish
 
@@ -269,7 +275,7 @@ Dependabot runs daily at 06:00 Europe/Istanbul and opens grouped PRs:
 - Major updates and `0.x` minor updates: left for manual review.
 - `react`, `react-dom`, and their type packages: major updates are ignored and must be handled manually.
 
-When the auto-merge workflow lands a Dependabot PR, it explicitly dispatches the Release workflow. This is required because a merge performed with `GITHUB_TOKEN` does not emit a push event that other workflows can react to. If the merged update does not touch package inputs (for example, a GitHub Actions-only bump), the release is skipped.
+When the auto-merge workflow lands a Dependabot PR, it is included in the next daily release run. If the merged update does not touch package inputs (for example, a GitHub Actions-only bump), the release is skipped.
 
 ## Troubleshooting
 

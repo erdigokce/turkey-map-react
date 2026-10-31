@@ -22,6 +22,15 @@ NC='\033[0m' # No Color
 
 # Release type (default to patch if not provided)
 RELEASE_TYPE=${1:-patch}
+# When true, only report whether a release is needed via $GITHUB_OUTPUT and
+# exit without running tests or bumping the version.
+CHECK_ONLY=${CHECK_ONLY:-false}
+
+set_output() {
+    if [ -n "${GITHUB_OUTPUT:-}" ]; then
+        echo "$1" >> "$GITHUB_OUTPUT"
+    fi
+}
 
 case "$RELEASE_TYPE" in
     auto|major|minor|patch|prerelease) ;;
@@ -39,6 +48,9 @@ if [ "$RELEASE_TYPE" = "auto" ]; then
     LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || true)
     if [ -n "$LAST_TAG" ]; then
         if [ -z "$(git log --oneline "${LAST_TAG}..HEAD")" ]; then
+            if [ "$CHECK_ONLY" = "true" ]; then
+                set_output "release=false"
+            fi
             echo -e "${YELLOW}No commits since ${LAST_TAG}; nothing to release.${NC}"
             exit 0
         fi
@@ -54,10 +66,18 @@ if [ "$RELEASE_TYPE" = "auto" ]; then
             ':(exclude)src/__tests__/**' \
             ':(exclude)src/**/*.test.ts' \
             ':(exclude)src/**/*.test.tsx'; then
+            if [ "$CHECK_ONLY" = "true" ]; then
+                set_output "release=false"
+            fi
             echo -e "${YELLOW}No package-affecting changes since ${LAST_TAG}; nothing to release.${NC}"
             exit 0
         fi
     fi
+fi
+
+if [ "$CHECK_ONLY" = "true" ]; then
+    set_output "release=true"
+    exit 0
 fi
 
 echo -e "${GREEN}Starting release process...${NC}"

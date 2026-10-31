@@ -1,9 +1,12 @@
 name: Release
 
 on:
-  push:
-    branches:
-      - master
+  # Release once a day instead of on every push. Package-affecting changes
+  # accumulate on master and the scheduled run ships them as one version.
+  # 04:30 UTC = 07:30 Europe/Istanbul (after Dependabot's 06:00 run and the
+  # top-of-the-hour scheduler rush).
+  schedule:
+    - cron: '30 4 * * *'
   workflow_dispatch:
     inputs:
       release_type:
@@ -21,8 +24,7 @@ on:
 permissions:
   contents: write
 
-# Serialize releases. If two merges land close together, the second run waits
-# for the first to finish and then normally finds nothing new to release.
+# Serialize releases. A manual run and the scheduled run should not overlap.
 concurrency:
   group: release
   cancel-in-progress: false
@@ -31,13 +33,6 @@ jobs:
   release:
     runs-on: ubuntu-latest
 
-    # Never release the version-bump commit itself. Pushes made with
-    # GITHUB_TOKEN do not trigger workflows anyway, but a manual push or a PAT
-    # would otherwise create an infinite release loop.
-    if: >
-      github.event_name == 'workflow_dispatch' ||
-      !startsWith(github.event.head_commit.message, 'chore(release):')
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v7
@@ -45,21 +40,33 @@ jobs:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
 
+      # Cheap check before installing/building. `scripts/release.sh` owns the
+      # policy for what counts as a release-worthy change.
+      - name: Check for release-worthy changes
+        id: changes
+        if: github.event_name == 'schedule' || inputs.release_type == 'auto'
+        env:
+          CHECK_ONLY: 'true'
+        run: ./scripts/release.sh auto
+
       - name: Setup Node.js
+        if: steps.changes.outputs.release != 'false'
         uses: actions/setup-node@v7
         with:
           node-version: '22'
           cache: 'npm'
 
       - name: Configure Git
+        if: steps.changes.outputs.release != 'false'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-      # If another commit landed while this run was queued or starting, let the
-      # newer run handle the release instead of racing it.
+      # If another commit landed while this run was queued or starting, skip
+      # instead of racing it. The next scheduled run will include it.
       - name: Check master has not moved
         id: head
+        if: steps.changes.outputs.release != 'false'
         run: |
           set -euo pipefail
 
@@ -72,27 +79,29 @@ jobs:
           remote_sha=$(git ls-remote origin refs/heads/master | cut -f1)
           if [ "$remote_sha" != "$GITHUB_SHA" ]; then
             echo "moved=true" >> "$GITHUB_OUTPUT"
-            echo "::notice::master moved from $GITHUB_SHA to $remote_sha; a newer release run will handle it."
+            echo "::notice::master moved from $GITHUB_SHA to $remote_sha; the next scheduled run will handle it."
           else
             echo "moved=false" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Install dependencies
-        if: steps.head.outputs.moved == 'false'
+        if: steps.changes.outputs.release != 'false' && steps.head.outputs.moved != 'true'
         run: npm ci
 
       - name: Record HEAD before release
         id: before
+        if: steps.changes.outputs.release != 'false' && steps.head.outputs.moved != 'true'
         run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
 
       - name: Run release script
-        if: steps.head.outputs.moved == 'false'
+        if: steps.changes.outputs.release != 'false' && steps.head.outputs.moved != 'true'
         env:
           RELEASE_TYPE: ${{ inputs.release_type || 'auto' }}
         run: ./scripts/release.sh "$RELEASE_TYPE"
 
       - name: Detect created release
         id: release
+        if: steps.changes.outputs.release != 'false' && steps.head.outputs.moved != 'true'
         run: |
           set -euo pipefail
           if [ "$(git rev-parse HEAD)" = "${{ steps.before.outputs.sha }}" ]; then
