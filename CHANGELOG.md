@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [2.1.0](https://github.com/erdigokce/turkey-map-react/compare/v2.0.6...v2.1.0) (2026-10-31)
+
+### Features
+
+* add Dependabot configuration and CI workflow for automated dependency updates ([0bbdf4a](https://github.com/erdigokce/turkey-map-react/commit/0bbdf4a7ae6ba5b8209ec898a93015815e96abda))
+
 ## [2.0.6](https://github.com/erdigokce/turkey-map-react/compare/v2.0.5...v2.0.6) (2026-07-30)
 
 ### Bug Fixes
