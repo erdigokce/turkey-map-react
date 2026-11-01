@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [2.2.0](https://github.com/erdigokce/turkey-map-react/compare/v2.1.3...v2.2.0) (2026-11-01)
+
+### Features
+
+* enhance TurkeyMap with selection capabilities ([#69](https://github.com/erdigokce/turkey-map-react/issues/69)) ([09ea896](https://github.com/erdigokce/turkey-map-react/commit/09ea896ca75ccbcb08916ce094f7de75e720a206))
+
+### Documentation
+
+* update CONTRIBUTING.md with OpenSpec change workflow and requirements ([705599a](https://github.com/erdigokce/turkey-map-react/commit/705599a31e854b57f2fe8ed087c399dafa21bb31))
+
+### Refactoring
+
+* **release:** update release process to run daily and streamline auto-merge handling ([ac6b821](https://github.com/erdigokce/turkey-map-react/commit/ac6b821f64e75226efa10029e02e605ffbd52ebe))
+
 ## [2.1.3](https://github.com/erdigokce/turkey-map-react/compare/v2.1.2...v2.1.3) (2026-10-31)
 
 ### Bug Fixes
