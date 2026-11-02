@@ -32,12 +32,14 @@ jobs:
         run: |
           set -euo pipefail
 
+          # `gh` reports GitHub App authors as "app/dependabot" (the REST API
+          # still says "dependabot[bot]"), so accept both spellings.
           pr_json=$(gh pr list \
             --repo "$GITHUB_REPOSITORY" \
             --head "$HEAD_BRANCH" \
             --state open \
             --json number,title,url,author \
-            --jq '[.[] | select(.author.login == "dependabot[bot]")][0]')
+            --jq '[.[] | select(.author.login == "dependabot[bot]" or .author.login == "app/dependabot")][0]')
 
           if [ -z "$pr_json" ] || [ "$pr_json" = "null" ]; then
             echo "No open Dependabot PR found for branch '$HEAD_BRANCH' - nothing to do."
@@ -62,7 +64,10 @@ jobs:
           # Grouped minor/patch updates are safe by configuration: the groups
           # listed here can only contain minor and patch bumps (see
           # dependabot.yml). Any new group must be added explicitly.
-          if [[ "$TITLE" =~ ^Bump\ the\ (minor-and-patch|github-actions)\ group ]]; then
+          # Dependabot titles carry a "chore(deps): " scope prefix and use a
+          # lowercase "bump", so match case-insensitively without anchoring.
+          title_lc=$(tr '[:upper:]' '[:lower:]' <<< "$TITLE")
+          if [[ "$title_lc" =~ bump\ the\ (minor-and-patch|github-actions)\ group ]]; then
             echo "Grouped minor/patch update detected - safe to merge."
             echo "safe=true" >> "$GITHUB_OUTPUT"
             exit 0
