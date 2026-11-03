@@ -1,0 +1,178 @@
+name: Security Audit
+
+# Daily dependency scan. It applies only non-breaking fixes, opens or updates a
+# single automation PR, and reports advisories that cannot be fixed
+# automatically. Write permissions are safe here because this workflow never
+# runs pull-request code: it always checks out the default branch.
+on:
+  schedule:
+    - cron: '30 5 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+  actions: write
+
+concurrency:
+  group: security-audit
+  cancel-in-progress: false
+
+jobs:
+  audit:
+    name: Dependency audit
+    runs-on: ubuntu-latest
+    env:
+      AUTOMATION_BRANCH: security/npm-audit-fix
+
+    steps:
+      - name: Checkout default branch
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Record baseline audit
+        run: npm audit --json > "$RUNNER_TEMP/audit-before.json" || true
+
+      - name: Apply non-breaking fixes
+        run: |
+          set +e
+          npm audit fix
+          status=$?
+          if [ "$status" -ne 0 ]; then
+            echo "::notice::npm audit fix exited with code $status; remaining advisories are reported below."
+          fi
+          exit 0
+
+      - name: Record post-fix audit
+        run: npm audit --json > "$RUNNER_TEMP/audit-after.json" || true
+
+      - name: Record production audit
+        run: npm audit --omit=dev --json > "$RUNNER_TEMP/audit-production.json" || true
+
+      - name: Verify audit reports
+        run: |
+          set -euo pipefail
+          for report in before after production; do
+            file="$RUNNER_TEMP/audit-$report.json"
+            if [ ! -s "$file" ]; then
+              echo "::error::Missing or empty npm audit report: $file"
+              exit 1
+            fi
+          done
+
+      - name: Generate report
+        run: |
+          set -euo pipefail
+          node scripts/security-audit.js \
+            --before "$RUNNER_TEMP/audit-before.json" \
+            --after "$RUNNER_TEMP/audit-after.json" \
+            --production "$RUNNER_TEMP/audit-production.json" \
+            --output "$RUNNER_TEMP/security-audit-report.md" \
+            --summary "$RUNNER_TEMP/security-audit-summary.json"
+          cat "$RUNNER_TEMP/security-audit-report.md" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Detect dependency changes
+        id: changes
+        run: |
+          set -euo pipefail
+          if [ -n "$(git status --porcelain -- package.json package-lock.json)" ]; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            git diff --stat -- package.json package-lock.json
+          else
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "No manifest or lockfile changes - no pull request needed."
+          fi
+
+      - name: Publish automation branch
+        if: steps.changes.outputs.changed == 'true'
+        run: |
+          set -euo pipefail
+
+          # The checkout above is the default branch, so this rebuilds the
+          # automation branch from it on every run. Only dependency manifests
+          # may be committed; anything else stays in the working tree.
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add package.json package-lock.json
+          git commit -m 'chore(deps): apply npm audit fixes'
+          git push --force origin "HEAD:refs/heads/$AUTOMATION_BRANCH"
+
+      - name: Create or update audit pull request
+        if: steps.changes.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+        run: |
+          set -euo pipefail
+
+          pr_json=$(gh pr list \
+            --repo "$GITHUB_REPOSITORY" \
+            --head "$AUTOMATION_BRANCH" \
+            --state open \
+            --json number \
+            --jq '.[0]')
+
+          if [ -n "$pr_json" ] && [ "$pr_json" != "null" ]; then
+            number=$(jq -r '.number' <<< "$pr_json")
+            echo "Updating audit pull request #$number."
+            gh pr edit "$number" \
+              --repo "$GITHUB_REPOSITORY" \
+              --body-file "$RUNNER_TEMP/security-audit-report.md"
+          else
+            echo "Creating audit pull request."
+            gh pr create \
+              --repo "$GITHUB_REPOSITORY" \
+              --base "$DEFAULT_BRANCH" \
+              --head "$AUTOMATION_BRANCH" \
+              --title 'chore(deps): apply npm audit fixes' \
+              --body-file "$RUNNER_TEMP/security-audit-report.md" \
+              --label dependencies
+          fi
+
+      # PRs created with GITHUB_TOKEN do not trigger pull_request workflows,
+      # so request the normal CI validation explicitly for the audit branch.
+      - name: Dispatch CI for the audit branch
+        if: steps.changes.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          gh workflow run ci.yml \
+            --repo "$GITHUB_REPOSITORY" \
+            --ref "$AUTOMATION_BRANCH"
+          echo "Dispatched CI for '$AUTOMATION_BRANCH'."
+
+      # Runs after the PR/no-change decision so a fix PR is never lost when a
+      # production advisory remains.
+      - name: Apply failure policy
+        env:
+          SUMMARY_FILE: ${{ runner.temp }}/security-audit-summary.json
+        run: |
+          set -euo pipefail
+
+          production_total=$(jq -r '.production.total' "$SUMMARY_FILE")
+          remaining_total=$(jq -r '.remaining | length' "$SUMMARY_FILE")
+
+          if [ "$production_total" -gt 0 ]; then
+            packages=$(jq -r '[.productionRemaining[] | "\(.name) (\(.severity))"] | join(", ")' "$SUMMARY_FILE")
+            echo "::error::Production dependency advisories remain: $packages"
+            exit 1
+          fi
+
+          if [ "$remaining_total" -gt 0 ]; then
+            packages=$(jq -r '[.remaining[] | "\(.name) (\(.severity))"] | join(", ")' "$SUMMARY_FILE")
+            echo "::warning::Development dependency advisories remain: $packages"
+          else
+            echo "No known vulnerabilities remain."
+          fi

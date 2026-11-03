@@ -124,6 +124,8 @@ feat!: remove deprecated API
   it into a temporary consumer project.
 - `npm run test:types` — compiles a TypeScript consumer against the published
   type declarations.
+- `npm run test:security-audit` — unit tests for the security-audit report
+  helper; also run by the CI typecheck job.
 - `npm run test:compat` — optional local smoke test for a specific React version
   (`REACT_VERSION=16.8.6 npm run test:compat`). CI runs it for React 16.8, 17,
   18, and 19.
@@ -137,13 +139,35 @@ Dependencies are kept up to date automatically:
 - Minor and patch npm updates are grouped into a single PR per day. Updates to
   `react`, `react-dom` and their type packages never cross a major version
   automatically.
+- **Scheduled security audit** (`.github/workflows/security-audit.yml`) runs daily
+  at 05:30 UTC on `master` and can also be dispatched manually from the Actions
+  tab. It records the current `npm audit` result, applies only non-breaking
+  fixes with `npm audit fix` (never `--force`), and re-runs the audit. The
+  workflow summary and PR body list before/after severity counts, the
+  advisories that were fixed, and the advisories that remain with their
+  severity and fix availability.
+- **Audit pull request** — when the fix pass changes `package.json` or
+  `package-lock.json`, the audit rebuilds the `security/npm-audit-fix` branch
+  from the default branch and creates or updates one PR labelled
+  `dependencies`. The branch is automation-owned: each run force-pushes a fresh
+  branch, so do not keep manual work on it. If nothing is fixable, no PR is
+  opened.
+- **Audit failure policy** — the run fails with an error annotation when a
+  production (`--omit=dev`) advisory remains. Development-only advisories are
+  reported as warnings and do not fail the run. This keeps the schedule useful
+  without a permanent red build for build-tool advisories.
 - **CI** (`.github/workflows/ci.yml`) installs dependencies, runs the source test
-  matrix on Node 22/24 and React 18/19, typechecks, builds the package, verifies
-  the built artifact and packed package, and runs React 16.8/17/18/19
-  compatibility smoke tests.
+  matrix on Node 22/24 and React 18/19, typechecks, tests the audit report
+  helper, builds the package, verifies the built artifact and packed package,
+  and runs React 16.8/17/18/19 compatibility smoke tests.
 - **Auto-merge** (`.github/workflows/dependabot-auto-merge.yml`) squash-merges a
   Dependabot PR only after CI passes and only when the update is a patch or a
-  minor (non-major) bump.
+  minor (non-major) bump. It auto-merges the audit PR only when every guard
+  passes: the head branch is exactly `security/npm-audit-fix`, the head is this
+  repository (not a fork), the author is the `github-actions[bot]` automation
+  identity, the changed-file list is non-empty and limited to `package.json`
+  and `package-lock.json`, and CI succeeded for that branch. Any other audit PR
+  stays open with a log note for manual review.
 
 The artifact and package tests are the safety net for build-tool updates: a
 Babel, webpack, or TypeScript update that breaks the published output fails CI
@@ -152,12 +176,25 @@ even if the source-level tests still pass.
 Major version bumps are always opened individually and must be reviewed and
 merged by a maintainer.
 
-### Enabling security updates
+### Security updates and code scanning
 
-Dependabot version updates are configured in this repository. To also receive
-pull requests for known vulnerabilities, enable **Dependabot alerts** and
-**Dependabot security updates** under
-*Settings → Code security and analysis* in the GitHub repository.
+The scheduled audit covers dependency advisories using the committed lockfile
+and the built-in `GITHUB_TOKEN`; it does not require manually enabling a
+separate Dependabot security-update workflow.
+
+When a finding needs a semver-major upgrade or a downgrade, `npm audit fix`
+leaves it untouched. The report marks it as available only with a major
+upgrade, or as having no available fix. Handle these by opening a dedicated
+dependency PR (or letting Dependabot open the major update), reviewing the
+upstream changelog, running `npm run verify`, and merging it manually. Major
+updates are never auto-merged through the Dependabot or audit paths.
+
+**CodeQL** (`.github/workflows/codeql.yml`) analyzes the JavaScript and
+TypeScript sources on pushes and pull requests targeting `master`, and weekly
+on Mondays at 05:00 UTC, with `build-mode: none`. Results are uploaded to
+GitHub code scanning and appear under *Security → Code scanning*. CodeQL
+findings are triaged from code scanning and are not fixed by automatic pull
+requests; fix or dismiss them manually and record a reason when dismissing.
 
 ## Code of Conduct
 

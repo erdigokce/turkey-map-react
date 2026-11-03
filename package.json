@@ -19,6 +19,7 @@
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
     "test:artifact": "jest --config jest.artifact.config.js",
+    "test:security-audit": "node --test scripts/security-audit.test.js",
     "test:package": "node scripts/test-package.js",
     "test:types": "node scripts/test-types.js",
     "test:compat": "node scripts/test-compat.js",
@@ -52,7 +53,7 @@
   },
   "homepage": "https://github.com/erdigokce/turkey-map-react#readme",
   "overrides": {
-    "brace-expansion": "5.0.9"
+    "brace-expansion": "^5.0.12"
   },
   "devDependencies": {
     "@babel/cli": "^8.0.6",

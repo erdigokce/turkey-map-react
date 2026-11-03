@@ -1,8 +1,9 @@
 name: Dependabot Auto Merge
 
-# Runs after the CI workflow finishes for a Dependabot branch. Filtering at the
-# trigger level keeps this workflow from being created after every CI run on
-# master; the job-level guard below is a second line of defence.
+# Runs after the CI workflow finishes for a Dependabot branch or for the
+# security-audit automation branch. Filtering at the trigger level keeps this
+# workflow from being created after every CI run on master; the job-level guard
+# below is a second line of defence.
 on:
   workflow_run:
     workflows: ["CI"]
@@ -10,6 +11,7 @@ on:
       - completed
     branches:
       - 'dependabot/**'
+      - 'security/npm-audit-fix'
 
 permissions:
   contents: write
@@ -17,14 +19,18 @@ permissions:
 
 jobs:
   auto-merge:
-    name: Auto-merge safe Dependabot PRs
+    name: Auto-merge safe dependency PRs
     if: >
-      github.event.workflow_run.event == 'pull_request' &&
-      github.event.workflow_run.conclusion == 'success'
+      github.event.workflow_run.conclusion == 'success' &&
+      (
+        github.event.workflow_run.event == 'pull_request' ||
+        (github.event.workflow_run.event == 'workflow_dispatch' &&
+         github.event.workflow_run.head_branch == 'security/npm-audit-fix')
+      )
     runs-on: ubuntu-latest
 
     steps:
-      - name: Resolve Dependabot pull request
+      - name: Resolve dependency pull request
         id: pr
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -32,17 +38,26 @@ jobs:
         run: |
           set -euo pipefail
 
-          # `gh` reports GitHub App authors as "app/dependabot" (the REST API
-          # still says "dependabot[bot]"), so accept both spellings.
+          # Dependabot PRs keep their author filter. The audit branch is
+          # resolved by exact head branch and its author is checked in the next
+          # step, so a spoofed author is reported instead of silently ignored.
+          # `gh` reports GitHub App authors as "app/<slug>" while the REST API
+          # still says "<slug>[bot]", so both spellings are accepted.
+          if [ "$HEAD_BRANCH" = "security/npm-audit-fix" ]; then
+            jq_filter='.[0]'
+          else
+            jq_filter='[.[] | select(.author.login == "dependabot[bot]" or .author.login == "app/dependabot")][0]'
+          fi
+
           pr_json=$(gh pr list \
             --repo "$GITHUB_REPOSITORY" \
             --head "$HEAD_BRANCH" \
             --state open \
-            --json number,title,url,author \
-            --jq '[.[] | select(.author.login == "dependabot[bot]" or .author.login == "app/dependabot")][0]')
+            --json number,title,url,author,isCrossRepository,headRepository \
+            --jq "$jq_filter")
 
           if [ -z "$pr_json" ] || [ "$pr_json" = "null" ]; then
-            echo "No open Dependabot PR found for branch '$HEAD_BRANCH' - nothing to do."
+            echo "No open dependency PR found for branch '$HEAD_BRANCH' - nothing to do."
             echo "found=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
@@ -51,15 +66,70 @@ jobs:
           echo "number=$(jq -r '.number' <<< "$pr_json")" >> "$GITHUB_OUTPUT"
           echo "url=$(jq -r '.url' <<< "$pr_json")" >> "$GITHUB_OUTPUT"
           echo "title=$(jq -r '.title' <<< "$pr_json")" >> "$GITHUB_OUTPUT"
+          echo "author=$(jq -r '.author.login' <<< "$pr_json")" >> "$GITHUB_OUTPUT"
+          echo "cross_repository=$(jq -r '.isCrossRepository' <<< "$pr_json")" >> "$GITHUB_OUTPUT"
+          echo "head_repository=$(jq -r '.headRepository.nameWithOwner // ""' <<< "$pr_json")" >> "$GITHUB_OUTPUT"
           echo "Resolved PR #$(jq -r '.number' <<< "$pr_json"): $(jq -r '.title' <<< "$pr_json")"
 
       - name: Decide whether the update is safe to merge
         id: update
         if: steps.pr.outputs.found == 'true'
         env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          HEAD_BRANCH: ${{ github.event.workflow_run.head_branch }}
           TITLE: ${{ steps.pr.outputs.title }}
+          AUTHOR: ${{ steps.pr.outputs.author }}
+          CROSS_REPOSITORY: ${{ steps.pr.outputs.cross_repository }}
+          HEAD_REPOSITORY: ${{ steps.pr.outputs.head_repository }}
+          PR_URL: ${{ steps.pr.outputs.url }}
         run: |
           set -euo pipefail
+
+          if [ "$HEAD_BRANCH" = "security/npm-audit-fix" ]; then
+            # The audit branch is produced by `npm audit fix` without
+            # `--force`, so it cannot contain a forced major upgrade. Skip the
+            # Dependabot title/version parser entirely and require the branch,
+            # repository, author, and changed-file guards instead.
+            if [ "$CROSS_REPOSITORY" != "false" ]; then
+              echo "Audit PR comes from a fork ($CROSS_REPOSITORY) - leaving for manual review."
+              echo "safe=false" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+
+            if [ "$HEAD_REPOSITORY" != "$GITHUB_REPOSITORY" ]; then
+              echo "Audit PR head repository '$HEAD_REPOSITORY' is not '$GITHUB_REPOSITORY' - leaving for manual review."
+              echo "safe=false" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+
+            if [ "$AUTHOR" != "github-actions[bot]" ] && [ "$AUTHOR" != "app/github-actions" ]; then
+              echo "Audit PR author '$AUTHOR' is not the automation identity - leaving for manual review."
+              echo "safe=false" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+
+            files=$(gh pr view "$PR_URL" \
+              --repo "$GITHUB_REPOSITORY" \
+              --json files \
+              --jq '.files[].path')
+            if [ -z "$files" ]; then
+              echo "Audit PR reports no changed files - leaving for manual review."
+              echo "safe=false" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+
+            unexpected=$(grep -vxE 'package(-lock)?\.json' <<< "$files" || true)
+            if [ -n "$unexpected" ]; then
+              echo "Audit PR changes files outside dependency manifests - leaving for manual review:"
+              echo "$unexpected"
+              echo "safe=false" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+
+            echo "Audit PR passed branch, repository, author, and file-list guards - safe to merge."
+            echo "safe=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
 
           # Grouped minor/patch updates are safe by configuration: the groups
           # listed here can only contain minor and patch bumps (see
