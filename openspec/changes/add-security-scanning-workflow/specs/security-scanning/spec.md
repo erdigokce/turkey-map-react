@@ -91,7 +91,7 @@ The existing auto-merge automation SHALL auto-merge a security-audit pull reques
 
 #### Scenario: Guarded audit pull request auto-merges
 
-- **WHEN** the audit pull request is on the automation branch, authored by the automation identity, changes only dependency manifests or lockfiles, and its CI run succeeds
+- **WHEN** the audit pull request is on the automation branch, authored by the automation identity, changes only dependency manifests or lockfiles, and its CI run succeeds for the pull request's current head commit
 - **THEN** the auto-merge automation merges it and deletes the branch
 
 #### Scenario: Unexpected files block auto-merge

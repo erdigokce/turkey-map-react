@@ -73,7 +73,7 @@ The `workflow_run` trigger adds `security/npm-audit-fix` to its branch list. The
 2. The PR is not from a fork (`isCrossRepository == false`) and its head repository is this repository.
 3. The author is `github-actions[bot]` (the REST spelling; `gh` may expose `app/github-actions`, so both are accepted).
 4. The changed file list is non-empty and contains only `package.json` and/or `package-lock.json`.
-5. CI for that branch concluded successfully (already enforced by the job condition).
+5. CI for that branch concluded successfully (already enforced by the job condition), and the completed run's head SHA matches the pull request's current head SHA so a force-push cannot merge an unvalidated commit.
 
 If any check fails, the workflow exits without merging and leaves a note in the log. A separate workflow was considered and rejected: the existing workflow already owns the "CI passed, then merge" decision, and duplicating it would create two merge paths to audit.
 

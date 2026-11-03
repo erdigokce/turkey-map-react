@@ -53,7 +53,7 @@ jobs:
             --repo "$GITHUB_REPOSITORY" \
             --head "$HEAD_BRANCH" \
             --state open \
-            --json number,title,url,author,isCrossRepository,headRepository \
+            --json number,title,url,author,isCrossRepository,headRepository,headRefOid \
             --jq "$jq_filter")
 
           if [ -z "$pr_json" ] || [ "$pr_json" = "null" ]; then
@@ -69,6 +69,7 @@ jobs:
           echo "author=$(jq -r '.author.login' <<< "$pr_json")" >> "$GITHUB_OUTPUT"
           echo "cross_repository=$(jq -r '.isCrossRepository' <<< "$pr_json")" >> "$GITHUB_OUTPUT"
           echo "head_repository=$(jq -r '.headRepository.nameWithOwner // ""' <<< "$pr_json")" >> "$GITHUB_OUTPUT"
+          echo "head_sha=$(jq -r '.headRefOid' <<< "$pr_json")" >> "$GITHUB_OUTPUT"
           echo "Resolved PR #$(jq -r '.number' <<< "$pr_json"): $(jq -r '.title' <<< "$pr_json")"
 
       - name: Decide whether the update is safe to merge
@@ -81,6 +82,8 @@ jobs:
           AUTHOR: ${{ steps.pr.outputs.author }}
           CROSS_REPOSITORY: ${{ steps.pr.outputs.cross_repository }}
           HEAD_REPOSITORY: ${{ steps.pr.outputs.head_repository }}
+          HEAD_SHA: ${{ steps.pr.outputs.head_sha }}
+          WORKFLOW_SHA: ${{ github.event.workflow_run.head_sha }}
           PR_URL: ${{ steps.pr.outputs.url }}
         run: |
           set -euo pipefail
@@ -104,6 +107,12 @@ jobs:
 
             if [ "$AUTHOR" != "github-actions[bot]" ] && [ "$AUTHOR" != "app/github-actions" ]; then
               echo "Audit PR author '$AUTHOR' is not the automation identity - leaving for manual review."
+              echo "safe=false" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+
+            if [ "$HEAD_SHA" != "$WORKFLOW_SHA" ]; then
+              echo "Audit PR head moved from $WORKFLOW_SHA to $HEAD_SHA after CI started - leaving for manual review."
               echo "safe=false" >> "$GITHUB_OUTPUT"
               exit 0
             fi
