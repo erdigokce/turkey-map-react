@@ -23,7 +23,7 @@ const renderTooltip: RenderTooltipCallback = (city, value) => (
 <TurkeyMap showTooltip={true} renderTooltip={renderTooltip} />;
 ```
 
-`renderTooltip` takes precedence over `tooltipText`, `disabledTooltipText`, and the province-name fallback, including for disabled provinces. The second `value` argument is reserved for a future data API and is always `undefined` in this release. A `null`, `false`, or empty return value renders an empty tooltip container without throwing.
+`renderTooltip` takes precedence over `tooltipText`, `disabledTooltipText`, and the province-name fallback, including for disabled provinces. The second `value` argument is the province's current choropleth value when `values` is supplied, otherwise `undefined`. A `null`, `false`, or empty return value renders an empty tooltip container without throwing.
 
 The tooltip surface uses `pointer-events: none`, so custom content must not rely on hover, focus, or click interaction. Avoid placing interactive controls inside it.
 

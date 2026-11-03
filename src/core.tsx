@@ -1,6 +1,7 @@
 import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import Tooltip from './Tooltip';
+import { createColorResolver, getFiniteValue } from './color-scale';
 import usePrefersReducedMotion from './usePrefersReducedMotion';
 import type {
   CityInteractionState,
@@ -235,6 +236,10 @@ type ProvinceProps = {
   showTooltip: boolean;
   resolvedStyle: ResolvedStyle;
   focusStyle: React.CSSProperties;
+  choroplethActive: boolean;
+  choroplethColor: string;
+  animateValues: boolean;
+  prefersReducedMotion: boolean;
   getCityStyle?: CityStyleGetter;
   cityWrapper?: CityWrapper;
   onEnterCity: (city: CityType, element: SVGGElement, point: TooltipPoint) => void;
@@ -259,6 +264,10 @@ const ProvinceComponent = ({
   showTooltip,
   resolvedStyle,
   focusStyle,
+  choroplethActive,
+  choroplethColor,
+  animateValues,
+  prefersReducedMotion,
   getCityStyle,
   cityWrapper,
   onEnterCity,
@@ -401,21 +410,54 @@ const ProvinceComponent = ({
   }, [city.id, registerHoverClear]);
 
   const pathStyle = useMemo(() => {
-    const fill = isDisabled
-      ? resolvedStyle.disabledColor
-      : isSelected
-        ? resolvedStyle.selectedColor
-        : hovered
-          ? resolvedStyle.hoverColor
-          : resolvedStyle.idleColor;
+    const numericStrokeWidth = typeof resolvedStyle.strokeWidth === "number"
+      ? resolvedStyle.strokeWidth
+      : 1;
+    let fill: string;
+    let stroke: string;
+    let strokeWidth: string | number;
+
+    if (choroplethActive) {
+      fill = isDisabled ? resolvedStyle.disabledColor : choroplethColor;
+
+      if (isDisabled) {
+        stroke = resolvedStyle.strokeColor;
+        strokeWidth = resolvedStyle.strokeWidth;
+      } else if (isSelected) {
+        stroke = resolvedStyle.selectedStroke;
+        strokeWidth = resolvedStyle.selectedStrokeWidth;
+      } else if (hovered) {
+        stroke = resolvedStyle.hoverColor;
+        strokeWidth = Math.max(1, numericStrokeWidth);
+      } else {
+        stroke = resolvedStyle.strokeColor;
+        strokeWidth = resolvedStyle.strokeWidth;
+      }
+    } else {
+      fill = isDisabled
+        ? resolvedStyle.disabledColor
+        : isSelected
+          ? resolvedStyle.selectedColor
+          : hovered
+            ? resolvedStyle.hoverColor
+            : resolvedStyle.idleColor;
+      stroke = isSelected ? resolvedStyle.selectedStroke : resolvedStyle.strokeColor;
+      strokeWidth = isSelected
+        ? resolvedStyle.selectedStrokeWidth
+        : resolvedStyle.strokeWidth;
+    }
+
     const basePathStyle: React.CSSProperties = {
       cursor: isDisabled ? "not-allowed" : "pointer",
       fill,
-      stroke: isSelected ? resolvedStyle.selectedStroke : resolvedStyle.strokeColor,
-      strokeWidth: isSelected
-        ? resolvedStyle.selectedStrokeWidth
-        : resolvedStyle.strokeWidth,
+      stroke,
+      strokeWidth,
     };
+
+    if (choroplethActive && animateValues && !prefersReducedMotion) {
+      basePathStyle.transition = "fill 300ms ease";
+    }
+
     const interactionState: CityInteractionState = {
       hovered,
       selected: isSelected,
@@ -426,7 +468,19 @@ const ProvinceComponent = ({
       ? getCityStyle(city, interactionState)
       : undefined;
     return mergeDefined(basePathStyle, themedStyle);
-  }, [city, hovered, focused, isSelected, isDisabled, resolvedStyle, getCityStyle]);
+  }, [
+    city,
+    hovered,
+    focused,
+    isSelected,
+    isDisabled,
+    resolvedStyle,
+    getCityStyle,
+    choroplethActive,
+    choroplethColor,
+    animateValues,
+    prefersReducedMotion,
+  ]);
 
   const pathElement = <path style={pathStyle} d={city.path} />;
   const cityElement = (
@@ -507,6 +561,13 @@ const CoreTurkeyMap: React.FC<CoreProps> = ({
   containerProps,
   svgProps,
   getCityStyle,
+  values,
+  colorScale,
+  scaleType,
+  thresholds,
+  noDataColor,
+  getColor,
+  animateValues = false,
   ariaLabel = "Turkey map",
   a11yFallback = false,
 }) => {
@@ -623,6 +684,30 @@ const CoreTurkeyMap: React.FC<CoreProps> = ({
     outlineColor: cssVar("tm-focus-ring", resolvedStyle.focusStroke),
     outlineOffset: 2,
   }), [resolvedStyle.focusStroke, resolvedStyle.focusStrokeWidth]);
+
+  const choroplethActive = values !== undefined;
+  const resolvedNoDataColor = noDataColor ?? cssVar("tm-no-data-color", "#eeeeee");
+  const colorResolver = useMemo(
+    () => (choroplethActive
+      ? createColorResolver({
+        values,
+        colorScale,
+        scaleType,
+        thresholds,
+        getColor,
+        noDataColor: resolvedNoDataColor,
+      })
+      : undefined),
+    [
+      choroplethActive,
+      values,
+      colorScale,
+      scaleType,
+      thresholds,
+      getColor,
+      resolvedNoDataColor,
+    ],
+  );
 
   const hasValidMaxSelection = maxSelection !== undefined
     && Number.isInteger(maxSelection)
@@ -1414,6 +1499,10 @@ const CoreTurkeyMap: React.FC<CoreProps> = ({
         showTooltip={showTooltip}
         resolvedStyle={resolvedStyle}
         focusStyle={focusStyle}
+        choroplethActive={choroplethActive}
+        choroplethColor={colorResolver ? colorResolver(city) : ""}
+        animateValues={animateValues}
+        prefersReducedMotion={prefersReducedMotion}
         getCityStyle={getCityStyle}
         cityWrapper={cityWrapper}
         onEnterCity={handleCityEnter}
@@ -1438,7 +1527,7 @@ const CoreTurkeyMap: React.FC<CoreProps> = ({
     ? disabledTooltipText ?? tooltipText ?? tooltipCity?.name
     : tooltipText || tooltipCity?.name;
   const customTooltipContent = renderTooltip && tooltipCity
-    ? renderTooltip(tooltipCity, undefined)
+    ? renderTooltip(tooltipCity, getFiniteValue(values, tooltipCity.id))
     : undefined;
   const hasCustomTooltip = Boolean(renderTooltip) && tooltipCity !== undefined;
   const tooltipShellStyle: React.CSSProperties = {

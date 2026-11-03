@@ -30,6 +30,18 @@ Every prop and exported TypeScript type.
 | `onHover`        | Fires when a city is hovered on the map.                                 | `(city: CityType) => void`                                                    | -                             | 1.0.0 |
 | `onClick`        | Fires when a city is clicked on the map.                                 | `(city: CityType) => void`                                                    | -                             | 1.0.0 |
 
+### Choropleth props
+
+| Property        | Description                                                                                  | Type               | Default                                | Since |
+| :-------------- | :------------------------------------------------------------------------------------------- | :----------------- | :------------------------------------- | ----: |
+| `values`        | Numeric metric values keyed by city id. Supplying it activates choropleth coloring.          | `ChoroplethValues` | -                                      | 2.6.0 |
+| `colorScale`    | Color stops interpreted by `scaleType`, or a function that maps a raw value to a color.     | `ColorScale`       | `["#f7fbff", "#08306b"]`               | 2.6.0 |
+| `scaleType`     | Scale used for the array `colorScale`: `"linear"`, `"quantize"`, `"quantile"`, or `"threshold"`. | `ScaleType`    | `"linear"`                             | 2.6.0 |
+| `thresholds`    | Ascending bucket boundaries for `scaleType="threshold"`; needs `thresholds.length + 1` colors. | `number[]`       | -                                      | 2.6.0 |
+| `noDataColor`   | Fill for provinces without a finite value. Overrides `--tm-no-data-color`.                    | `string`           | `var(--tm-no-data-color, #eeeeee)`     | 2.6.0 |
+| `getColor`      | Per-province color escape hatch; wins over `colorScale` for provinces with a value.          | `GetColorCallback` | -                                      | 2.6.0 |
+| `animateValues` | Transitions province fills when values change, unless reduced motion is preferred.           | `boolean`          | `false`                                | 2.6.0 |
+
 ### Selection props
 
 | Property               | Description                                                              | Type                                | Default  | Since |
@@ -51,7 +63,7 @@ Every prop and exported TypeScript type.
 | `showTooltip`        | Displays the default tooltip if set to `true`.                        | `boolean`               | `false`      | 1.1.0 |
 | `tooltipText`        | Sets custom text for the default tooltip.                             | `string`                | City name    | 1.1.0 |
 | `disabledTooltipText`| Tooltip text shown when a disabled city is hovered. Falls back to its name. | `string`          | City name    | 2.3.0 |
-| `renderTooltip`      | Renders custom tooltip content. Takes precedence over all text fallbacks. | `RenderTooltipCallback` | -          | 2.2.0 |
+| `renderTooltip`      | Renders custom tooltip content; the second argument is the current choropleth value, or `undefined`. Takes precedence over all text fallbacks. | `RenderTooltipCallback` | -          | 2.2.0 |
 | `tooltipPosition`    | Anchors the tooltip to the pointer or the hovered/focused province.   | `TooltipPosition`       | `"cursor"`   | 2.2.0 |
 | `tooltipPortal`      | Renders the tooltip into `document.body` to escape clipping ancestors. | `boolean`              | `false`      | 2.2.0 |
 | `tooltipOffset`      | Distance in pixels between the anchor and the tooltip.                | `number`                | `16`         | 2.2.0 |
@@ -76,6 +88,11 @@ Every prop and exported TypeScript type.
 | `CustomStyleType`               | `{ idleColor: string, hoverColor: string, selectedColor?: string, selectedStroke?: string, selectedStrokeWidth?: number, disabledColor?: string, strokeColor?: string, strokeWidth?: number, focusStroke?: string, focusStrokeWidth?: number }` |
 | `CityInteractionState`          | `{ hovered: boolean, selected: boolean, disabled: boolean, focused: boolean }`                                              |
 | `CityStyleGetter`               | `(city: CityType, state: CityInteractionState) => React.CSSProperties \| undefined`                                          |
+| `ChoroplethValues`              | `Record<string, number>`                                                                                                     |
+| `ColorScale`                    | `string[] \| ColorScaleFunction`                                                                                             |
+| `ColorScaleFunction`            | `(value: number) => string`                                                                                                  |
+| `ScaleType`                     | `"linear" \| "quantize" \| "quantile" \| "threshold"`                                                                        |
+| `GetColorCallback`              | `(value: number, city: CityType) => string`                                                                                  |
 | `SelectionMode`                 | `"none" \| "single" \| "multiple"`                                                                                            |
 | `SelectionValue`                | `string \| string[] \| null`                                                                                                 |
 | `IsCityDisabledCallback`        | `(city: CityType) => boolean`                                                                                                |

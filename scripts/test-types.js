@@ -15,15 +15,20 @@ const {
 const consumerSource = `
 import React from 'react';
 import TurkeyMap, {
+  ChoroplethValues,
   CityInteractionState,
   CityStyleGetter,
   CityType,
+  ColorScale,
+  ColorScaleFunction,
   CustomStyleType,
+  GetColorCallback,
   IsCityDisabledCallback,
   OnMaxSelectionReachedCallback,
   OnSelectCallback,
   OnSelectionChangeCallback,
   RenderTooltipCallback,
+  ScaleType,
   SelectionMode,
   SelectionValue,
   TooltipPosition,
@@ -113,6 +118,16 @@ const renderTooltipWithValue: RenderTooltipCallback = (tooltipCity, value) => (
   String(value ?? tooltipCity.name)
 );
 
+const choroplethValues: ChoroplethValues = { alpha: 10, beta: 90 };
+const colorScale: ColorScale = ['#f7fbff', '#08306b'];
+const colorScaleFunction: ColorScaleFunction = (value) => (
+  value > 50 ? '#08306b' : '#f7fbff'
+);
+const scaleTypes: ScaleType[] = ['linear', 'quantize', 'quantile', 'threshold'];
+const getColor: GetColorCallback = (value, colorCity) => (
+  value > 50 ? '#08306b' : colorCity.id === 'alpha' ? '#f7fbff' : '#6baed6'
+);
+
 const selectedCityValue: string | null = city.id;
 const selectedCityValues: string[] = [city.id];
 
@@ -141,6 +156,13 @@ const App = () => (
     containerProps={containerProps}
     svgProps={svgProps}
     getCityStyle={getCityStyle}
+    values={choroplethValues}
+    colorScale={colorScale}
+    scaleType={scaleTypes[0]}
+    thresholds={[10, 25, 50]}
+    noDataColor="#eeeeee"
+    getColor={getColor}
+    animateValues={true}
     visible={true}
     hoverable={true}
     showTooltip={true}
@@ -228,7 +250,30 @@ const CoreApp = () => (
     selectedCities={selectedCityValues}
     showTooltip={true}
     disabledCities={disabledCities}
+    values={choroplethValues}
+    colorScale={colorScale}
     onSelectionChange={onSelectionChange}
+  />
+);
+
+const FunctionScale = () => (
+  <TurkeyMap
+    data={data}
+    values={choroplethValues}
+    colorScale={colorScaleFunction}
+    scaleType="quantile"
+    animateValues={true}
+  />
+);
+
+const ThresholdScale = () => (
+  <TurkeyMap
+    data={data}
+    values={choroplethValues}
+    colorScale={['#eff3ff', '#bdd7e7', '#6baed6', '#08306b']}
+    scaleType="threshold"
+    thresholds={[10, 25, 50]}
+    getColor={getColor}
   />
 );
 
@@ -242,7 +287,9 @@ export {
   ControlledSingle,
   CoreApp,
   CoreWithoutData,
+  FunctionScale,
   SingleArgumentTooltip,
+  ThresholdScale,
   UncontrolledMultiple,
   UncontrolledSingle,
 };

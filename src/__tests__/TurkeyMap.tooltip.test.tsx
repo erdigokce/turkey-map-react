@@ -214,6 +214,42 @@ describe('TurkeyMap tooltip', () => {
       expect(renderTooltip).toHaveBeenCalledWith(richAlpha, undefined);
     });
 
+    it('forwards the current choropleth value to the renderer', () => {
+      const renderTooltip = jest.fn((city, value) => `${city.name}: ${String(value)}`);
+      const { container } = render(
+        <TurkeyMap
+          data={testData}
+          showTooltip={true}
+          values={{ alpha: 92 }}
+          renderTooltip={renderTooltip}
+        />,
+      );
+      const tooltip = getTooltip(container);
+
+      fireEvent.mouseEnter(getCityGroup(container, 'Alpha'));
+      advanceTimers(80);
+
+      expect(renderTooltip).toHaveBeenCalledWith(alpha, 92);
+      expect(tooltip).toHaveTextContent('Alpha: 92');
+    });
+
+    it('forwards undefined for a province without a value', () => {
+      const renderTooltip = jest.fn((city) => city.name);
+      const { container } = render(
+        <TurkeyMap
+          data={testData}
+          showTooltip={true}
+          values={{ alpha: 92 }}
+          renderTooltip={renderTooltip}
+        />,
+      );
+
+      fireEvent.mouseEnter(getCityGroup(container, 'Beta'));
+      advanceTimers(80);
+
+      expect(renderTooltip).toHaveBeenCalledWith(beta, undefined);
+    });
+
     it.each([
       ['null', () => null],
       ['false', () => false],

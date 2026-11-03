@@ -13,6 +13,8 @@ Province colors and outlines resolve in this order, highest precedence first:
 3. CSS custom property (`--tm-*`) with its built-in fallback
 4. built-in default
 
+When `values` is supplied, the choropleth fill takes the place of the idle fill and follows its own precedence: `getCityStyle` > `getColor` > function `colorScale` > array `colorScale` > `noDataColor`. `customStyle` still supplies the hover, selected, disabled, and stroke values used around that fill. See [Choropleth values and color scales](./choropleth.md).
+
 ## CSS custom properties
 
 CSS custom properties can be set on an ancestor or directly on the map container through `style` or `containerProps.style`. They inherit, so two maps can use different themes without affecting each other.
@@ -26,6 +28,7 @@ CSS custom properties can be set on an ancestor or directly on the map container
 | `--tm-stroke-color`   | `none`    | Non-selected province outline (none by default) |
 | `--tm-stroke-width`   | `0.5`     | Non-selected province outline width             |
 | `--tm-focus-ring`     | `#1a73e8` | Keyboard focus outline color                    |
+| `--tm-no-data-color`  | `#eeeeee` | Province fill when `values` has no value        |
 
 ```css
 .checkout-map {
@@ -75,6 +78,27 @@ For a per-instance theme, set the variables inline. TypeScript consumers can cas
 ```
 
 `selectedStroke` and `selectedStrokeWidth` always win over `strokeColor` and `strokeWidth` for selected provinces. Omitting the general stroke fields adds no visible outline to the default rendering. `focusStroke` and `focusStrokeWidth` only affect the keyboard focus ring and never change fill, hover, selected, or disabled styling.
+
+## Choropleth fills
+
+When `values` is supplied, the computed value color replaces the idle fill:
+
+- Hovering keeps the value or no-data fill and uses `hoverColor` as the outline.
+- Selecting keeps the value or no-data fill and uses `selectedStroke` / `selectedStrokeWidth`.
+- Disabled provinces keep `disabledColor` and the disabled cursor.
+- Provinces without a value use `noDataColor`, which defaults to `--tm-no-data-color`.
+- `getCityStyle` runs last and can override any of these properties.
+
+```jsx
+<TurkeyMap
+  values={{ istanbul: 92, ankara: 45 }}
+  colorScale={['#f7fbff', '#08306b']}
+  noDataColor="#eeeeee"
+  customStyle={{ hoverColor: '#f59e0b', selectedStroke: '#0b3d91' }}
+/>
+```
+
+`animateValues` adds a 300 ms fill transition and is disabled automatically under `prefers-reduced-motion: reduce`.
 
 ## `getCityStyle`
 
