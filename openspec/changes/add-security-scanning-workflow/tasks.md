@@ -35,13 +35,13 @@
 
 - [x] 6.1 Update the `CONTRIBUTING.md` dependency-update and security-updates sections with the scan cadence, the automation branch and PR contents, the auto-merge guards, and the manual path for findings that need a major upgrade
 - [x] 6.2 Document that CodeQL findings are triaged from code scanning and are not fixed by automatic PRs, and remove wording that implies security updates require manually enabling Dependabot security updates
-- [ ] 6.3 Confirm `readme.md` needs no API table change because this change does not alter component behavior, and note that in the PR description
+- [x] 6.3 Confirm `readme.md` needs no API table change because this change does not alter component behavior, and note that in the PR description
 
 ## 7. Verification
 
 - [x] 7.1 Validate the new and edited workflow YAML (YAML parser plus `actionlint` if available) and run the report helper tests with `npm run test:security-audit`
 - [x] 7.2 Run `npm run typecheck`, `npm test`, `npm run build`, `npm run test:artifact`, `npm run test:package`, and `npm run test:types` after the override change
-- [ ] 7.3 Open the change as a PR and confirm CodeQL analysis runs and uploads results, and that the existing CI matrix still passes
+- [x] 7.3 Open the change as a PR and confirm CodeQL analysis runs and uploads results, and that the existing CI matrix still passes
 
 ## 8. Post-merge verification
 
