@@ -87,7 +87,7 @@ The scan SHALL fail the workflow run when a production dependency vulnerability 
 
 ### Requirement: Automated audit pull requests merge only under strict guards
 
-The existing auto-merge automation SHALL auto-merge a security-audit pull request only when all of the following hold: the pull request originates from the known automation branch, its author is the repository automation identity, CI has completed successfully for that branch, and the diff is limited to dependency manifests and lockfiles. Any other audit pull request MUST remain open for maintainer review. Major dependency changes MUST never be auto-merged.
+The existing auto-merge automation SHALL auto-merge a security-audit pull request only when all of the following hold: the pull request originates from the known automation branch, its author is the repository automation identity, CI has completed successfully for the pull request's current head commit, and the diff is limited to dependency manifests and lockfiles. Any other audit pull request MUST remain open for maintainer review. Major dependency changes MUST never be auto-merged.
 
 #### Scenario: Guarded audit pull request auto-merges
 

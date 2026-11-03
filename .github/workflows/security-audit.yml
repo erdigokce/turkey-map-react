@@ -153,6 +153,59 @@ jobs:
             --ref "$AUTOMATION_BRANCH"
           echo "Dispatched CI for '$AUTOMATION_BRANCH'."
 
+      # `workflow_run` is also suppressed for CI runs dispatched with
+      # GITHUB_TOKEN, so wait for the run and hand off through
+      # `repository_dispatch`, which is exempt from that suppression.
+      - name: Wait for CI and signal auto-merge
+        if: steps.changes.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          head_sha=$(git rev-parse HEAD)
+          run_id=""
+          for attempt in $(seq 1 30); do
+            run_id=$(gh run list \
+              --repo "$GITHUB_REPOSITORY" \
+              --workflow ci.yml \
+              --branch "$AUTOMATION_BRANCH" \
+              --event workflow_dispatch \
+              --limit 20 \
+              --json databaseId,headSha \
+              --jq "[.[] | select(.headSha == \"$head_sha\")][0].databaseId // \"\"")
+            if [ -n "$run_id" ]; then
+              break
+            fi
+            sleep 5
+          done
+
+          if [ -z "$run_id" ]; then
+            echo "::error::Could not find the dispatched CI run for $head_sha."
+            exit 1
+          fi
+
+          echo "Waiting for CI run $run_id ($head_sha)."
+          set +e
+          gh run watch "$run_id" \
+            --repo "$GITHUB_REPOSITORY" \
+            --exit-status \
+            --interval 10
+          ci_status=$?
+          set -e
+
+          if [ "$ci_status" -ne 0 ]; then
+            echo "::warning::CI did not succeed for $head_sha; leaving the audit PR open for manual review."
+            exit 0
+          fi
+
+          jq -n \
+            --arg branch "$AUTOMATION_BRANCH" \
+            --arg sha "$head_sha" \
+            '{event_type: "security-audit-ci-complete", client_payload: {branch: $branch, sha: $sha}}' \
+            | gh api "repos/$GITHUB_REPOSITORY/dispatches" --input -
+          echo "Signaled auto-merge for '$AUTOMATION_BRANCH' at $head_sha."
+
       # Runs after the PR/no-change decision so a fix PR is never lost when a
       # production advisory remains.
       - name: Apply failure policy

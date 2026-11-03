@@ -37,7 +37,7 @@ Alternatives considered:
 
 The schedule is `30 5 * * *` UTC. Dependabot runs at 06:00 Europe/Istanbul (03:00 UTC) and Release at 04:30 UTC, so the audit starts after both and its PR lands before the next daily release. It checks out `${{ github.event.repository.default_branch }}` explicitly so a manual dispatch from another branch cannot scan or push untrusted code with a write token.
 
-GitHub suppresses `pull_request` workflow runs for events created with the repository `GITHUB_TOKEN`, so a PR created by the audit workflow would not trigger CI by itself. After pushing the automation branch, the audit workflow therefore dispatches `ci.yml` on that branch (`actions: write`). The auto-merge workflow accepts that `workflow_dispatch` run for `security/npm-audit-fix` in addition to normal `pull_request` runs. This keeps the no-new-secrets constraint while preserving CI as the validation gate; the trade-off is one additional token permission.
+GitHub suppresses `pull_request` workflow runs for events created with the repository `GITHUB_TOKEN`, so a PR created by the audit workflow would not trigger CI by itself. After pushing the automation branch, the audit workflow therefore dispatches `ci.yml` on that branch (`actions: write`). `workflow_run` is also suppressed for a CI run dispatched with `GITHUB_TOKEN`, so the audit waits for that run and sends a `repository_dispatch` event (`security-audit-ci-complete`) once it succeeds. The auto-merge workflow accepts that event, and keeps the existing `workflow_run` path for pull-request and user-dispatched CI runs. This keeps the no-new-secrets constraint while preserving CI as the validation gate; the trade-off is one additional token permission and a few minutes of audit runtime.
 
 ### Decision: `npm audit fix` without `--force`, with a one-time override widening
 
@@ -73,7 +73,7 @@ The `workflow_run` trigger adds `security/npm-audit-fix` to its branch list. The
 2. The PR is not from a fork (`isCrossRepository == false`) and its head repository is this repository.
 3. The author is `github-actions[bot]` (the REST spelling; `gh` may expose `app/github-actions`, so both are accepted).
 4. The changed file list is non-empty and contains only `package.json` and/or `package-lock.json`.
-5. CI for that branch concluded successfully (already enforced by the job condition), and the completed run's head SHA matches the pull request's current head SHA so a force-push cannot merge an unvalidated commit.
+5. CI for that branch concluded successfully, and the completed run's head SHA matches the pull request's current head SHA so a force-push cannot merge an unvalidated commit. The audit workflow confirms this through its `repository_dispatch` handoff after waiting for the dispatched CI run; a failed CI run never sends the handoff.
 
 If any check fails, the workflow exits without merging and leaves a note in the log. A separate workflow was considered and rejected: the existing workflow already owns the "CI passed, then merge" decision, and duplicating it would create two merge paths to audit.
 
