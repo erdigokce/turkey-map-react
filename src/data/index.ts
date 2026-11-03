@@ -1,4 +1,6 @@
-export const cities = [
+import type { CityType } from '../city-type';
+
+export const cities: CityType[] = [
   {
      "id": "bursa",
      "plateNumber": 16,

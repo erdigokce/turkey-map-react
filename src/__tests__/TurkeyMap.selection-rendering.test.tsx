@@ -5,9 +5,11 @@ import TurkeyMap from '../index';
 import { alpha, beta, testData } from '../../tests/fixtures/cities';
 import { getCityGroup, getCityGroups, getCityPath } from '../../tests/helpers';
 
+const generalStroke = 'var(--tm-stroke-color, none)';
+
 const selectedNames = (container: HTMLElement): string[] => (
   getCityGroups(container)
-    .filter((group) => getCityPath(group).style.stroke !== '')
+    .filter((group) => getCityPath(group).style.stroke !== generalStroke)
     .map((group) => group.getAttribute('data-iladi') ?? '')
 );
 
@@ -16,7 +18,10 @@ describe('TurkeyMap selection rendering', () => {
     const { container } = render(<TurkeyMap data={testData} />);
     const path = getCityPath(getCityGroup(container, 'Alpha'));
 
-    expect(path.getAttribute('style')).toBe('cursor: pointer; fill: #444;');
+    expect(path.getAttribute('style')).toBe(
+      'cursor: pointer; fill: var(--tm-idle-color, #444); '
+      + 'stroke: var(--tm-stroke-color, none); stroke-width: var(--tm-stroke-width, 0.5);',
+    );
   });
 
   it('prefers selected styling over hover styling and restores idle on deselect', () => {
@@ -61,7 +66,7 @@ describe('TurkeyMap selection rendering', () => {
     );
 
     expect(alphaPath).toHaveStyle({ fill: '#111111' });
-    expect(alphaPath.style.stroke).toBe('');
+    expect(alphaPath.style.stroke).toBe(generalStroke);
   });
 
   it('applies custom selected colors, stroke, and stroke width only to selected paths', () => {
@@ -88,7 +93,7 @@ describe('TurkeyMap selection rendering', () => {
     expect(getCityPath(getCityGroup(container, 'Beta'))).toHaveStyle({
       fill: '#111111',
     });
-    expect(getCityPath(getCityGroup(container, 'Beta')).style.stroke).toBe('');
+    expect(getCityPath(getCityGroup(container, 'Beta')).style.stroke).toBe(generalStroke);
   });
 
   it('keeps selection across unrelated re-renders and customStyle changes', () => {
@@ -106,9 +111,8 @@ describe('TurkeyMap selection rendering', () => {
     );
 
     expect(selectedNames(container)).toEqual(['Alpha']);
-    expect(getCityPath(getCityGroup(container, 'Alpha'))).toHaveStyle({
-      fill: '#dc3522',
-    });
+    expect(getCityPath(getCityGroup(container, 'Alpha')).style.fill)
+      .toBe('var(--tm-selected-color, #dc3522)');
   });
 
   it('keeps uncontrolled selection across customStyle changes', () => {
@@ -168,6 +172,7 @@ describe('TurkeyMap selection keyboard support', () => {
 
     fireEvent.focus(group);
     expect(group.style.outline).toBe('2px solid #1a73e8');
+    expect(group.style.outlineColor).toBe('var(--tm-focus-ring, #1a73e8)');
     expect(group.style.outlineOffset).toBe('2px');
 
     fireEvent.blur(group);
@@ -175,17 +180,24 @@ describe('TurkeyMap selection keyboard support', () => {
     expect(group.style.outlineOffset).toBe('');
   });
 
-  it('adds no keyboard stops or keyboard selection in none mode', () => {
-    const { container } = render(<TurkeyMap data={testData} />);
-    const group = getCityGroup(container, 'Alpha');
+  it('uses one roving tab stop and activates with Enter and Space in none mode', () => {
+    const onClick = jest.fn();
+    const { container } = render(<TurkeyMap data={testData} onClick={onClick} />);
+    const alphaGroup = getCityGroup(container, 'Alpha');
+    const betaGroup = getCityGroup(container, 'Beta');
 
-    expect(group).not.toHaveAttribute('tabindex');
+    expect(alphaGroup).toHaveAttribute('tabindex', '0');
+    expect(betaGroup).toHaveAttribute('tabindex', '-1');
 
-    fireEvent.keyDown(group, { key: 'Enter' });
-    fireEvent.focus(group);
+    fireEvent.keyDown(alphaGroup, { key: 'Enter' });
+    fireEvent.keyDown(betaGroup, { key: ' ' });
 
+    expect(onClick).toHaveBeenCalledWith(alpha);
+    expect(onClick).toHaveBeenCalledWith(beta);
     expect(selectedNames(container)).toEqual([]);
-    expect(group.style.outline).toBe('');
+
+    fireEvent.focus(alphaGroup);
+    expect(alphaGroup.style.outline).toBe('2px solid #1a73e8');
   });
 });
 

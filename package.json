@@ -4,6 +4,25 @@
   "description": "An interactive SVG Turkey map for React JS applications.",
   "main": "./lib/index.js",
   "types": "./lib/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./lib/index.d.ts",
+      "require": "./lib/index.js",
+      "default": "./lib/index.js"
+    },
+    "./core": {
+      "types": "./lib/core.d.ts",
+      "require": "./lib/core.js",
+      "default": "./lib/core.js"
+    },
+    "./data": {
+      "types": "./lib/data/index.d.ts",
+      "require": "./lib/data/index.js",
+      "default": "./lib/data/index.js"
+    },
+    "./lib/*": "./lib/*",
+    "./package.json": "./package.json"
+  },
   "readme": "./readme.md",
   "files": [
     "lib",
@@ -22,8 +41,9 @@
     "test:security-audit": "node --test scripts/security-audit.test.js",
     "test:package": "node scripts/test-package.js",
     "test:types": "node scripts/test-types.js",
+    "test:bundle-size": "node scripts/check-bundle-size.js",
     "test:compat": "node scripts/test-compat.js",
-    "verify": "npm run clean-build && npm run test:coverage && npm run test:artifact && npm run test:package && npm run test:types",
+    "verify": "npm run clean-build && npm run test:bundle-size && npm run test:coverage && npm run test:artifact && npm run test:package && npm run test:types",
     "release": "./scripts/release.sh",
     "release:auto": "./scripts/release.sh auto",
     "release:major": "./scripts/release.sh major",
@@ -65,18 +85,20 @@
     "@testing-library/react": "^16.3.3",
     "@testing-library/user-event": "^14.6.8",
     "@types/jest": "^30.0.0",
+    "@types/jest-axe": "^3.5.9",
     "@types/node": "^26.6.5",
     "@types/react": "^19.3.0",
     "@types/react-css-modules": "^4.6.8",
     "@types/react-dom": "^19.3.0",
     "babel-jest": "^30.5.2",
     "babel-loader": "^10.1.1",
+    "commit-and-tag-version": "^13.3.0",
     "jest": "^30.5.2",
+    "jest-axe": "^11.0.0",
     "jest-environment-jsdom": "^30.5.2",
     "path": "^0.12.7",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
-    "commit-and-tag-version": "^13.3.0",
     "typescript": "^7.0.2",
     "webpack": "^5.112.2",
     "webpack-cli": "^7.2.3"

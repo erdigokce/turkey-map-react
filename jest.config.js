@@ -20,6 +20,8 @@ module.exports = {
     '!src/**/*.d.ts',
     '!src/**/*.test.{ts,tsx}',
     '!src/test-fixtures/**',
+    '!src/types.ts',
+    '!src/city-type.ts',
   ],
   coverageThreshold: {
     global: {

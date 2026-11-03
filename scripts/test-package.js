@@ -18,6 +18,8 @@ const requiredFiles = [
   'LICENSE',
   'lib/index.js',
   'lib/index.d.ts',
+  'lib/core.js',
+  'lib/core.d.ts',
   'lib/Tooltip.js',
   'lib/Tooltip.d.ts',
   'lib/data/index.js',
@@ -55,12 +57,30 @@ const React = require('react');
 const { renderToStaticMarkup } = require('react-dom/server');
 const pkg = require('turkey-map-react');
 const TurkeyMap = pkg.default || pkg;
+const corePkg = require('turkey-map-react/core');
+const CoreTurkeyMap = corePkg.default || corePkg;
+const { cities } = require('turkey-map-react/data');
 
 assert.equal(typeof TurkeyMap, 'function');
+assert.equal(typeof CoreTurkeyMap, 'function');
+assert.equal(cities.length, 81);
 
 const html = renderToStaticMarkup(React.createElement(TurkeyMap));
 assert.match(html, /id="svg-turkiye-haritasi"/);
 assert.equal((html.match(/data-iladi=/g) || []).length, 81);
+
+const customCities = [
+  { id: 'alpha', plateNumber: 1, name: 'Alpha', path: 'M 0 0 L 10 10 Z' },
+  { id: 'beta', plateNumber: 2, name: 'Beta', path: 'M 20 20 L 30 30 Z' },
+];
+const coreHtml = renderToStaticMarkup(
+  React.createElement(CoreTurkeyMap, { data: { cities: customCities } }),
+);
+assert.match(coreHtml, /data-iladi="Alpha"/);
+assert.equal((coreHtml.match(/data-iladi=/g) || []).length, 2);
+
+const emptyCoreHtml = renderToStaticMarkup(React.createElement(CoreTurkeyMap));
+assert.equal((emptyCoreHtml.match(/data-iladi=/g) || []).length, 0);
 
 const hidden = renderToStaticMarkup(React.createElement(TurkeyMap, { visible: false }));
 assert.match(hidden, /hidden/);
@@ -85,13 +105,26 @@ import assert from 'node:assert/strict';
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import pkg from 'turkey-map-react';
+import corePkg from 'turkey-map-react/core';
+import { cities } from 'turkey-map-react/data';
 
 const TurkeyMap = pkg.default || pkg;
+const CoreTurkeyMap = corePkg.default || corePkg;
 assert.equal(typeof TurkeyMap, 'function');
+assert.equal(typeof CoreTurkeyMap, 'function');
+assert.equal(cities.length, 81);
 
 const html = renderToStaticMarkup(React.createElement(TurkeyMap));
 assert.match(html, /id="svg-turkiye-haritasi"/);
 assert.equal((html.match(/data-iladi=/g) || []).length, 81);
+
+const coreHtml = renderToStaticMarkup(
+  React.createElement(CoreTurkeyMap, {
+    data: { cities: [{ id: 'alpha', plateNumber: 1, name: 'Alpha', path: 'M 0 0 L 10 10 Z' }] },
+  }),
+);
+assert.match(coreHtml, /data-iladi="Alpha"/);
+assert.equal((coreHtml.match(/data-iladi=/g) || []).length, 1);
 
 console.log('ESM package smoke passed.');
 `;

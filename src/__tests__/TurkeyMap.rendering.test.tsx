@@ -28,7 +28,8 @@ describe('TurkeyMap rendering', () => {
     const path = getCityPath(bursa);
     expect(path).toHaveAttribute('d');
     expect(path.getAttribute('d')).not.toBe('');
-    expect(path).toHaveStyle({ fill: '#444', cursor: 'pointer' });
+    expect(path.style.fill).toBe('var(--tm-idle-color, #444)');
+    expect(path).toHaveStyle({ cursor: 'pointer' });
   });
 
   it('renders a custom viewBox', () => {

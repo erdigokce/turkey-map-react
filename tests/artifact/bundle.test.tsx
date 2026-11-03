@@ -8,7 +8,26 @@ const TurkeyMap = (bundle.default || bundle) as React.ComponentType<{
   visible?: boolean;
   showTooltip?: boolean;
   tooltipText?: string;
-  customStyle?: { idleColor: string; hoverColor: string };
+  renderTooltip?: (city: { id: string; name: string }, value?: unknown) => React.ReactNode;
+  tooltipPosition?: 'cursor' | 'city';
+  tooltipPortal?: boolean;
+  tooltipOffset?: number;
+  tooltipDelay?: number;
+  id?: string;
+  className?: string;
+  style?: React.CSSProperties;
+  containerProps?: React.HTMLAttributes<HTMLDivElement>;
+  svgProps?: React.SVGAttributes<SVGSVGElement>;
+  customStyle?: {
+    idleColor: string;
+    hoverColor: string;
+    strokeColor?: string;
+    strokeWidth?: number;
+  };
+  getCityStyle?: (
+    city: { id: string },
+    state: { hovered: boolean; selected: boolean; disabled: boolean; focused: boolean },
+  ) => React.CSSProperties | undefined;
   onClick?: (city: unknown) => void;
 }>;
 
@@ -34,6 +53,43 @@ describe('published bundle', () => {
     expect(
       container.querySelector('#svg-turkiye-haritasi-container-tooltip'),
     ).toHaveTextContent('Built bundle tooltip');
+  });
+
+  it('renders a custom tooltip from the built bundle', () => {
+    const renderTooltip = jest.fn(
+      (city: { name: string }) => <strong>Built {city.name} card</strong>,
+    );
+    const { container } = render(
+      <TurkeyMap showTooltip={true} renderTooltip={renderTooltip} />,
+    );
+    const tooltip = container.querySelector('#svg-turkiye-haritasi-container-tooltip');
+    const group = container.querySelector('g[data-iladi]');
+
+    if (!group || !tooltip) {
+      throw new Error('Expected a city group and a tooltip');
+    }
+
+    fireEvent.mouseEnter(group);
+
+    expect(renderTooltip).toHaveBeenCalledWith(
+      expect.objectContaining({ name: expect.any(String) }),
+      undefined,
+    );
+    expect(tooltip.querySelector('strong')).toHaveTextContent(/Built .+ card/);
+  });
+
+  it('renders a portaled tooltip from the built bundle', () => {
+    const { unmount } = render(
+      <TurkeyMap showTooltip={true} tooltipPortal={true} />,
+    );
+    const tooltip = document.getElementById('svg-turkiye-haritasi-container-tooltip');
+
+    expect(tooltip).toBeInTheDocument();
+    expect(tooltip?.parentElement).toBe(document.body);
+
+    unmount();
+
+    expect(document.getElementById('svg-turkiye-haritasi-container-tooltip')).toBeNull();
   });
 
   it('honors the visible prop from the built bundle', () => {
@@ -74,5 +130,35 @@ describe('published bundle', () => {
     }
 
     expect(path).toHaveStyle({ fill: '#123456' });
+  });
+
+  it('applies theming props and scoped ids from the built bundle', () => {
+    const { container } = render(
+      <TurkeyMap
+        id="artifact-map"
+        className="artifact-map"
+        showTooltip={true}
+        containerProps={{ 'data-testid': 'artifact-shell' }}
+        svgProps={{ 'aria-label': 'Artifact map' }}
+        customStyle={{
+          idleColor: '#444',
+          hoverColor: '#dc3522',
+          strokeColor: '#ffffff',
+          strokeWidth: 1,
+        }}
+        getCityStyle={(city) => (city.id === 'istanbul' ? { fill: '#123456' } : undefined)}
+      />,
+    );
+    const svg = container.querySelector('#artifact-map-svg');
+
+    expect(container.querySelector('#artifact-map')).toHaveAttribute(
+      'data-testid',
+      'artifact-shell',
+    );
+    expect(container.querySelector('#artifact-map')).toHaveClass('artifact-map');
+    expect(svg).toHaveAttribute('aria-label', 'Artifact map');
+    expect(container.querySelector('#artifact-map-turkiye')).toBeInTheDocument();
+    expect(container.querySelector('#artifact-map-tooltip')).toBeInTheDocument();
+    expect(container.querySelector('#istanbul path')).toHaveStyle({ fill: '#123456' });
   });
 });

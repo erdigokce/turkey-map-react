@@ -16,13 +16,15 @@ const threeCities = {
   cities: [...testCities, gamma],
 };
 
+const generalStroke = 'var(--tm-stroke-color, none)';
+
 const isSelected = (container: HTMLElement, name: string): boolean => (
-  getCityPath(getCityGroup(container, name)).style.stroke !== ''
+  getCityPath(getCityGroup(container, name)).style.stroke !== generalStroke
 );
 
 const selectedNames = (container: HTMLElement): string[] => (
   getCityGroups(container)
-    .filter((group) => getCityPath(group).style.stroke !== '')
+    .filter((group) => getCityPath(group).style.stroke !== generalStroke)
     .map((group) => group.getAttribute('data-iladi') ?? '')
 );
 

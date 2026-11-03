@@ -1,8 +1,11 @@
 import React from 'react';
 
 type TooltipProps = {
+  children?: React.ReactNode,
+  id?: string,
   text?: string,
   style?: React.CSSProperties,
+  visible?: boolean,
 };
 
 const tooltipTextStyle: React.CSSProperties = {
@@ -13,14 +16,21 @@ const tooltipTextStyle: React.CSSProperties = {
   padding: '5px 0',
   borderRadius: 6,
   position: 'absolute',
-  zIndex: 1
+  zIndex: 1,
+  pointerEvents: 'none',
 }
 
 const Tooltip = (props: TooltipProps) => {
-  const { text, style } = props;
+  const { children, id = 'svg-turkiye-haritasi-container-tooltip', text, style, visible } = props;
+
   return (
-    <div id="svg-turkiye-haritasi-container-tooltip" style={{ ...tooltipTextStyle, ...style }}>
-      {text}
+    <div
+      id={id}
+      role="tooltip"
+      aria-hidden={visible ? undefined : true}
+      style={{ ...tooltipTextStyle, ...style }}
+    >
+      {children !== undefined ? children : text}
     </div>
   )
 }

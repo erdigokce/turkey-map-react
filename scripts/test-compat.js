@@ -21,12 +21,25 @@ const React = require('react');
 const { renderToStaticMarkup } = require('react-dom/server');
 const pkg = require('turkey-map-react');
 const TurkeyMap = pkg.default || pkg;
+const corePkg = require('turkey-map-react/core');
+const CoreTurkeyMap = corePkg.default || corePkg;
+const { cities } = require('turkey-map-react/data');
 
 assert.equal(typeof TurkeyMap, 'function');
+assert.equal(typeof CoreTurkeyMap, 'function');
+assert.equal(cities.length, 81);
 
 const html = renderToStaticMarkup(React.createElement(TurkeyMap));
 assert.match(html, /id="svg-turkiye-haritasi"/);
 assert.equal((html.match(/data-iladi=/g) || []).length, 81);
+
+const coreHtml = renderToStaticMarkup(
+  React.createElement(CoreTurkeyMap, {
+    data: { cities: [{ id: 'alpha', plateNumber: 1, name: 'Alpha', path: 'M 0 0 L 10 10 Z' }] },
+  }),
+);
+assert.match(coreHtml, /data-iladi="Alpha"/);
+assert.equal((coreHtml.match(/data-iladi=/g) || []).length, 1);
 
 const hidden = renderToStaticMarkup(React.createElement(TurkeyMap, { visible: false }));
 assert.match(hidden, /hidden/);
