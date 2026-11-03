@@ -52,7 +52,7 @@ schema configured in `openspec/config.yaml`. Each change consists of:
   compatibility is mandatory, new features must be opt-in, the runtime stays
   dependency-free, and interactive features need accessibility support.
 - A behavior change is not complete without Jest and `@testing-library` tests
-  and a `readme.md` API table update.
+  and an API reference update in `docs/api.md`.
 - Emergency security fixes may be implemented first with maintainer approval,
   but they must still get a retroactive OpenSpec change documenting the
   behavior and follow-up work.
@@ -105,7 +105,7 @@ feat!: remove deprecated API
    items are complete. The change name should appear in the PR description.
 2. Ensure any install or build dependencies are removed before the end of the layer when doing a 
    build.
-3. Update the `readme.md` with details of changes to the interface, this includes new props,
+3. Update the relevant documentation, including `docs/api.md` for new props,
    callbacks, exported types, and usage examples.
 4. Follow the commit message convention described above. The versioning is handled automatically
    by the release script based on conventional commits. The versioning scheme we use is [SemVer](http://semver.org/).
