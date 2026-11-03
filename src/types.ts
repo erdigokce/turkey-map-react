@@ -26,6 +26,12 @@ export type IsCityDisabledCallback = (city: CityType) => boolean;
 export type TooltipPosition = "cursor" | "city";
 export type RenderTooltipCallback = (city: CityType, value?: unknown) => ReactNode;
 
+export type ChoroplethValues = Record<string, number>;
+export type ColorScaleFunction = (value: number) => string;
+export type ColorScale = string[] | ColorScaleFunction;
+export type ScaleType = "linear" | "quantize" | "quantile" | "threshold";
+export type GetColorCallback = (value: number, city: CityType) => string;
+
 export type CityInteractionState = {
   hovered: boolean;
   selected: boolean;
@@ -77,6 +83,13 @@ export type TurkeyMapProps = {
   containerProps?: HTMLAttributes<HTMLDivElement>;
   svgProps?: SVGAttributes<SVGSVGElement>;
   getCityStyle?: CityStyleGetter;
+  values?: ChoroplethValues;
+  colorScale?: ColorScale;
+  scaleType?: ScaleType;
+  thresholds?: number[];
+  noDataColor?: string;
+  getColor?: GetColorCallback;
+  animateValues?: boolean;
   ariaLabel?: string;
   a11yFallback?: boolean;
 };
