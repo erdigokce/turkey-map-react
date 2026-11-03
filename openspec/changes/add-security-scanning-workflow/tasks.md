@@ -24,6 +24,7 @@
 - [x] 4.2 Resolve the PR by exact head branch and require `isCrossRepository == false`, a head repository matching this repository, and an author of `github-actions[bot]` or `app/github-actions` for the audit branch
 - [x] 4.3 Enforce a non-empty changed-file list limited to `package.json` and `package-lock.json`, merge only when those checks pass, and leave a log note for manual review otherwise
 - [x] 4.4 Verify the audit branch skips the Dependabot title/version parser and that major updates still cannot be auto-merged through either path
+- [ ] 4.5 Wait for the dispatched audit CI run and send a `repository_dispatch` event so auto-merge does not depend on `workflow_run` events that `GITHUB_TOKEN` suppresses
 
 ## 5. CodeQL code scanning
 
