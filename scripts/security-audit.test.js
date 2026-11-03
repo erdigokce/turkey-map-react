@@ -12,6 +12,7 @@ const {
   severityCounts,
   summarize,
   renderMarkdown,
+  escapeCell,
 } = require('./security-audit');
 
 const scriptPath = path.join(__dirname, 'security-audit.js');
@@ -234,6 +235,10 @@ test('development-only findings are warnings, not failures', () => {
   assert.equal(summary.hasProductionFindings, false);
   assert.equal(summary.hasDevelopmentOnlyFindings, true);
   assert.match(markdown, /Only development dependency advisories remain/);
+});
+
+test('escapeCell escapes backslashes before pipes and flattens newlines', () => {
+  assert.equal(escapeCell('a\\b|c\nd'), 'a\\\\b\\|c d');
 });
 
 test('the CLI writes the markdown report and the JSON summary', (t) => {

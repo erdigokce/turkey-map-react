@@ -192,6 +192,7 @@ const summarize = ({ before, after, production } = {}) => {
 };
 
 const escapeCell = (value) => String(value === undefined || value === null ? '' : value)
+  .replace(/\\/g, '\\\\')
   .replace(/\|/g, '\\|')
   .replace(/\r?\n/g, ' ');
 
@@ -416,6 +417,7 @@ module.exports = {
   listVulnerabilities,
   summarize,
   renderMarkdown,
+  escapeCell,
   parseArgs,
   main,
 };
