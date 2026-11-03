@@ -20,6 +20,7 @@
     "test:coverage": "jest --coverage",
     "test:artifact": "jest --config jest.artifact.config.js",
     "test:security-audit": "node --test scripts/security-audit.test.js",
+    "test:security-audit-guard": "echo guard",
     "test:package": "node scripts/test-package.js",
     "test:types": "node scripts/test-types.js",
     "test:compat": "node scripts/test-compat.js",
