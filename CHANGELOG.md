@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [2.3.0](https://github.com/erdigokce/turkey-map-react/compare/v2.2.1...v2.3.0) (2026-11-03)
+
+### Features
+
+* Selection & theming TurkeyMap component and related types ([8bf1d4d](https://github.com/erdigokce/turkey-map-react/commit/8bf1d4dc47ca5ca91338e55ab89900591aeefcbf))
+
+### Documentation
+
+* Reorganization of readme and splitting down documentation ([68bad0b](https://github.com/erdigokce/turkey-map-react/commit/68bad0b2beb300b7b1854b058796ba2a88ca59e3))
+
 ## [2.2.1](https://github.com/erdigokce/turkey-map-react/compare/v2.2.0...v2.2.1) (2026-11-03)
 
 ## [2.2.0](https://github.com/erdigokce/turkey-map-react/compare/v2.1.3...v2.2.0) (2026-11-01)
