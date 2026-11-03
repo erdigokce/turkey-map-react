@@ -17,3 +17,12 @@ export const beta: CityType = {
 export const testCities: CityType[] = [alpha, beta];
 
 export const testData = { cities: testCities };
+
+export const disabledAlpha: CityType = {
+  ...alpha,
+  disabled: true,
+};
+
+export const customDisabledCities: CityType[] = [disabledAlpha, beta];
+
+export const customDisabledData = { cities: customDisabledCities };

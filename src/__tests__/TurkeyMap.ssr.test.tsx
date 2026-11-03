@@ -18,6 +18,27 @@ describe('TurkeyMap server rendering', () => {
     expect(html).toContain('data-iladi="Alpha"');
     expect(html).toContain('data-iladi="Beta"');
     expect(html.match(/data-iladi=/g)).toHaveLength(2);
+    expect(html).toContain('id="turkiye" role="group" aria-label="Turkey map"');
+    expect(html).toContain('data-tm-city-id="alpha"');
+    expect(html).toContain('role="button" aria-label="Alpha, plate 1"');
+    expect(html).toContain('tabindex="0"');
+    expect(html).toContain('tabindex="-1"');
+    expect(html).toContain('role="status" aria-live="polite" aria-atomic="true"');
+  });
+
+  it('renders selection semantics to static markup', () => {
+    const html = renderToStaticMarkup(
+      <TurkeyMap
+        data={testData}
+        selectionMode="multiple"
+        selectedCities={['alpha']}
+      />,
+    );
+
+    expect(html).toContain('role="listbox"');
+    expect(html).toContain('aria-multiselectable="true"');
+    expect(html).toContain('role="option" aria-label="Alpha, plate 1" aria-selected="true"');
+    expect(html).toContain('role="option" aria-label="Beta, plate 2" aria-selected="false"');
   });
 
   it('renders the hidden state to static markup', () => {
@@ -33,6 +54,10 @@ describe('TurkeyMap server rendering', () => {
 
     expect(html).toContain('SSR tooltip');
     expect(html).toContain('@keyframes turkey_react_map_tooltip_fade_out');
+    expect(html).toContain('role="tooltip"');
+    expect(html).toContain('aria-hidden="true"');
+    expect(html).toContain('pointer-events:none');
+    expect(html).toContain('@media (prefers-reduced-motion: reduce)');
   });
 
   it('renders custom colors to static markup', () => {

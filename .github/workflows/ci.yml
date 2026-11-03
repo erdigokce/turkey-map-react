@@ -92,6 +92,9 @@ jobs:
       - name: Build package
         run: npm run clean-build
 
+      - name: Check bundle size
+        run: npm run test:bundle-size
+
       - name: Test the built artifact
         run: npm run test:artifact -- --ci
 

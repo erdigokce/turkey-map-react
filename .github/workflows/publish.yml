@@ -81,6 +81,10 @@ jobs:
         if: steps.package.outputs.published == 'false'
         run: npm run clean-build
 
+      - name: Check bundle size
+        if: steps.package.outputs.published == 'false'
+        run: npm run test:bundle-size
+
       - name: Verify built package
         if: steps.package.outputs.published == 'false'
         run: |

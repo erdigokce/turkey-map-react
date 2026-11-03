@@ -1,10 +1,13 @@
 const path = require('path');
 module.exports = {
   mode: 'production',
-  entry: './src/index.tsx',
+  entry: {
+    index: './src/index.tsx',
+    core: './src/core.tsx',
+  },
   output: {
     path: path.resolve('./lib'),
-    filename: 'index.js',
+    filename: '[name].js',
     libraryTarget: 'commonjs2'
   },
   externals: {
@@ -28,7 +31,7 @@ module.exports = {
           loader: 'babel-loader',
           options: {
             overrides: [{
-              test: "./src/data.ts",
+              test: "./src/data/index.ts",
               compact: true,
             }],
           }
