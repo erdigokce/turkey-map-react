@@ -10,7 +10,7 @@
 
 An interactive SVG map of Turkey for React applications. Ships all 81 provinces, supports single and multiple selection, and is keyboard accessible by default.
 
-**81 built-in provinces · Selection · Accessible navigation · Custom tooltips · Choropleth color scales · CSS-variable theming · React 16.8–19**
+**81 built-in provinces · Selection · Zoom & pan · Accessible navigation · Custom tooltips · Choropleth color scales · CSS-variable theming · React 16.8–19**
 
 [**Live demo**](https://turkey-map-react-demo.netlify.app/) · [**npm package**](https://www.npmjs.com/package/turkey-map-react) · [**Changelog**](https://github.com/erdigokce/turkey-map-react/blob/master/CHANGELOG.md) · [**Issues**](https://github.com/erdigokce/turkey-map-react/issues)
 
@@ -57,6 +57,22 @@ const values = { istanbul: 92, ankara: 45, izmir: 61 };
 
 Linear, quantize, quantile, and threshold scales are built in, with `getColor` as an escape hatch. Provinces without a value use `noDataColor`, hover and selection keep the metric fill, and `renderTooltip` receives the current value. See [Choropleth values and color scales][choropleth] for the data contract and examples.
 
+## Zoom and pan
+
+Zoom and pan are opt-in. Wheel, pinch, double-click, and drag work out of the box, with accessible controls and a typed ref for programmatic focus:
+
+```jsx
+const ref = useRef(null);
+
+<TurkeyMap zoomable minZoom={1} maxZoom={8} zoomControls ref={ref} />;
+
+ref.current?.focusCity('istanbul');
+ref.current?.zoomTo(2);
+ref.current?.resetView();
+```
+
+The viewport can be controlled with `viewport` and `onViewportChange`. See [Zoom and pan][zoom-pan] for gestures, keyboard shortcuts, bounds, and the full ref API.
+
 ## Entry points
 
 | Entry point             | What it provides                                                       | Use it when                                                          |
@@ -65,7 +81,7 @@ Linear, quantize, quantile, and threshold scales are built in, with `getColor` a
 | `turkey-map-react/core` | The same component without the built-in dataset. `data` is required.   | You supply your own `data` and want the dataset out of your bundle.  |
 | `turkey-map-react/data` | The built-in dataset as a named `cities` export.                       | You want to read, filter, or extend the built-in provinces yourself. |
 
-The root entry is roughly 85 kB gzipped, `core` is roughly 3 kB gzipped before your data, and `data` is roughly 81 kB gzipped. See [entry points and bundle size][entry-points] for examples and guidance.
+The root entry is roughly 91 kB gzipped, `core` is roughly 10 kB gzipped before your data, and `data` is roughly 81 kB gzipped. See [entry points and bundle size][entry-points] for examples and guidance.
 
 ## Documentation
 
@@ -77,6 +93,7 @@ Detailed guides live in [`docs/`](https://github.com/erdigokce/turkey-map-react/
 | [Selection and forms][selection]                     | Single and multiple selection, controlled and uncontrolled values, limits, and form integration.         |
 | [Custom data and cities][custom-data]                | Custom datasets, disabled provinces, and city wrapping.                                                 |
 | [Choropleth values][choropleth]                      | Numeric values, linear/quantize/quantile/threshold scales, no-data styling, and transitions.            |
+| [Zoom and pan][zoom-pan]                             | Opt-in gestures, controlled and uncontrolled viewports, keyboard shortcuts, controls, and the ref API.  |
 | [Tooltips][tooltips]                                 | Custom content, positioning, portals, delays, keyboard focus, and reduced motion.                       |
 | [Accessibility][accessibility]                       | Keyboard navigation, ARIA semantics, live regions, and the native select fallback.                      |
 | [Styling and DOM ids][styling]                       | CSS custom properties, `customStyle`, `getCityStyle`, container props, and instance ids.                 |
@@ -100,6 +117,7 @@ Derived from **dnomak**'s [svg-turkiye-haritasi][dnomak-link] project.
 [selection]: https://github.com/erdigokce/turkey-map-react/blob/master/docs/selection.md
 [custom-data]: https://github.com/erdigokce/turkey-map-react/blob/master/docs/custom-data.md
 [choropleth]: https://github.com/erdigokce/turkey-map-react/blob/master/docs/choropleth.md
+[zoom-pan]: https://github.com/erdigokce/turkey-map-react/blob/master/docs/zoom-pan.md
 [tooltips]: https://github.com/erdigokce/turkey-map-react/blob/master/docs/tooltips.md
 [accessibility]: https://github.com/erdigokce/turkey-map-react/blob/master/docs/accessibility.md
 [styling]: https://github.com/erdigokce/turkey-map-react/blob/master/docs/styling.md

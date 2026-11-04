@@ -42,6 +42,25 @@ Every prop and exported TypeScript type.
 | `getColor`      | Per-province color escape hatch; wins over `colorScale` for provinces with a value.          | `GetColorCallback` | -                                      | 2.6.0 |
 | `animateValues` | Transitions province fills when values change, unless reduced motion is preferred.           | `boolean`          | `false`                                | 2.6.0 |
 
+### Zoom and pan props
+
+| Property           | Description                                                                                   | Type                        | Default | Since |
+| :----------------- | :-------------------------------------------------------------------------------------------- | :-------------------------- | :------ | ----: |
+| `zoomable`         | Enables wheel, pinch, double-click, drag, keyboard zoom/pan, and the ref API.                  | `boolean`                   | `false` | 3.0.0 |
+| `minZoom`          | Minimum viewport scale; must be finite and `>= 1`.                                             | `number`                    | `1`     | 3.0.0 |
+| `maxZoom`          | Maximum viewport scale; values below `minZoom` are raised to `minZoom`.                        | `number`                    | `8`     | 3.0.0 |
+| `zoomControls`     | Renders accessible zoom-in, zoom-out, and reset buttons. Requires `zoomable`.                  | `boolean`                   | `false` | 3.0.0 |
+| `viewport`         | Controlled viewport. Translations are in SVG viewBox user units and are normalized.            | `Viewport`                  | -       | 3.0.0 |
+| `onViewportChange` | Fires when a gesture or ref call changes the viewport. Does not fire on mount.                 | `OnViewportChangeCallback`  | -       | 3.0.0 |
+
+The default export accepts a ref typed as `TurkeyMapRef`:
+
+| Method                       | Description                                                                                         |
+| :--------------------------- | :-------------------------------------------------------------------------------------------------- |
+| `focusCity(cityId, zoom?)`   | Centers a province; the default zoom is `max(currentScale, 2)`, clamped to the zoom bounds.         |
+| `zoomTo(scale)`              | Sets an absolute scale around the current viewport center.                                          |
+| `resetView()`                | Returns to `minZoom` with the map centered.                                                         |
+
 ### Selection props
 
 | Property               | Description                                                              | Type                                | Default  | Since |
@@ -101,3 +120,6 @@ Every prop and exported TypeScript type.
 | `OnSelectCallback`              | `(city: CityType) => void`                                                                                                   |
 | `OnSelectionChangeCallback`     | `(cities: CityType[]) => void`                                                                                               |
 | `OnMaxSelectionReachedCallback` | `(city: CityType, selectedCities: CityType[], maxSelection: number) => void`                                                  |
+| `Viewport`                      | `{ scale: number, translateX: number, translateY: number }` — translations are in SVG viewBox user units.                    |
+| `OnViewportChangeCallback`      | `(viewport: Viewport) => void`                                                                                               |
+| `TurkeyMapRef`                  | `{ focusCity(cityId: string, zoom?: number): void, zoomTo(scale: number): void, resetView(): void }`                         |

@@ -37,7 +37,7 @@ The tooltip surface uses `pointer-events: none`, so custom content must not rely
 <TurkeyMap showTooltip={true} tooltipPosition="city" />
 ```
 
-In city mode the tooltip is centered above the province's rendered bounds, separated by `tooltipOffset` pixels. City anchors are computed when the tooltip is revealed or the active province changes; they are not updated on scroll or resize, and no viewport collision detection or flipping is included.
+In city mode the tooltip is centered above the province's rendered bounds, separated by `tooltipOffset` pixels. City anchors are computed when the tooltip is revealed or the active province changes and are refreshed when a zoomable map zooms or pans; they are not updated on scroll or resize, and no viewport collision detection or flipping is included.
 
 ### Portals for clipping containers
 
@@ -71,5 +71,6 @@ When `showTooltip` is enabled, keyboard focus reveals the tooltip immediately fo
 
 ## Related
 
+- [Zoom and pan](./zoom-pan.md) — city-anchored tooltips follow viewport changes.
 - [Accessibility](./accessibility.md) — keyboard focus behavior and screen-reader announcements.
 - [API reference: tooltip props](./api.md#tooltip-props) — all tooltip options.

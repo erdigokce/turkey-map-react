@@ -37,7 +37,7 @@ const getCityGroups = (container: HTMLElement) => (
 
 describe('published bundle', () => {
   it('exports a renderable component', () => {
-    expect(typeof TurkeyMap).toBe('function');
+    expect(['function', 'object']).toContain(typeof TurkeyMap);
 
     const { container } = render(<TurkeyMap />);
 

@@ -61,8 +61,8 @@ const corePkg = require('turkey-map-react/core');
 const CoreTurkeyMap = corePkg.default || corePkg;
 const { cities } = require('turkey-map-react/data');
 
-assert.equal(typeof TurkeyMap, 'function');
-assert.equal(typeof CoreTurkeyMap, 'function');
+assert.ok(['function', 'object'].includes(typeof TurkeyMap));
+assert.ok(['function', 'object'].includes(typeof CoreTurkeyMap));
 assert.equal(cities.length, 81);
 
 const html = renderToStaticMarkup(React.createElement(TurkeyMap));
@@ -110,8 +110,8 @@ import { cities } from 'turkey-map-react/data';
 
 const TurkeyMap = pkg.default || pkg;
 const CoreTurkeyMap = corePkg.default || corePkg;
-assert.equal(typeof TurkeyMap, 'function');
-assert.equal(typeof CoreTurkeyMap, 'function');
+assert.ok(['function', 'object'].includes(typeof TurkeyMap));
+assert.ok(['function', 'object'].includes(typeof CoreTurkeyMap));
 assert.equal(cities.length, 81);
 
 const html = renderToStaticMarkup(React.createElement(TurkeyMap));
