@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [2.4.0](https://github.com/erdigokce/turkey-map-react/compare/v2.3.1...v2.4.0) (2026-11-04)
+
+### Features
+
+* add choropleth values and color scales ([7b0ef92](https://github.com/erdigokce/turkey-map-react/commit/7b0ef92c92d720e371db7a2f0b4eea87ff321eb7))
+* add GeoJSON to city data helper ([1e1805c](https://github.com/erdigokce/turkey-map-react/commit/1e1805c377e21c7b9b04929a7414496d82a80cad))
+* add headless useTurkeyMap hook ([e438f9e](https://github.com/erdigokce/turkey-map-react/commit/e438f9e275843601cf2fbcabdfa4b30b3acbbec9))
+* add rich geography data model ([36c6bd7](https://github.com/erdigokce/turkey-map-react/commit/36c6bd781e4d8e11654fea31719a45cb29644935))
+* add zoom, pan, and imperative ref API ([9ef04c4](https://github.com/erdigokce/turkey-map-react/commit/9ef04c4837db69236f2ad7025d52230fce148b06))
+
 ## [2.3.1](https://github.com/erdigokce/turkey-map-react/compare/v2.3.0...v2.3.1) (2026-11-04)
 
 ### Bug Fixes
