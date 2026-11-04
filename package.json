@@ -20,6 +20,11 @@
       "require": "./lib/data/index.js",
       "default": "./lib/data/index.js"
     },
+    "./geojson": {
+      "types": "./lib/geojson.d.ts",
+      "require": "./lib/geojson.js",
+      "default": "./lib/geojson.js"
+    },
     "./lib/*": "./lib/*",
     "./package.json": "./package.json"
   },

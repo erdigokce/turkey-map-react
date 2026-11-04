@@ -52,6 +52,25 @@ type SalesCity = Omit<CityType, "meta"> & { meta: { sales: number } };
 
 See [custom data][custom-data] for field meanings, units, centroid coordinates, and data sources.
 
+## GeoJSON conversion
+
+Convert GeoJSON polygons into the `data` shape without hand-writing SVG paths:
+
+```jsx
+import TurkeyMap from 'turkey-map-react';
+import { geoJsonToCities } from 'turkey-map-react/geojson';
+
+const cities = geoJsonToCities(provinceGeoJson, {
+  idKey: 'ADM1_CODE',
+  nameKey: 'NAME_1',
+  plateKey: 'PLATE',
+});
+
+<TurkeyMap data={{ cities }} />;
+```
+
+`Polygon` and `MultiPolygon` are supported, including holes. The helper projects longitude/latitude into the map's viewBox and accepts a custom `project` hook. It lives in a separate entry point and is not part of the default bundle. See [GeoJSON conversion][geojson] for options and limitations.
+
 ## Choropleth
 
 Color provinces by any metric with `values`, keyed by city id:
@@ -140,8 +159,9 @@ The hook is exported from both `turkey-map-react` and `turkey-map-react/core`, s
 | `turkey-map-react`      | The default `TurkeyMap` component plus the built-in 81-province dataset. | You want the one-line `<TurkeyMap />` map.                           |
 | `turkey-map-react/core` | The same component without the built-in dataset. `data` is required.   | You supply your own `data` and want the dataset out of your bundle.  |
 | `turkey-map-react/data` | The built-in dataset as a named `cities` export.                       | You want to read, filter, or extend the built-in provinces yourself. |
+| `turkey-map-react/geojson` | `geoJsonToCities`, which converts GeoJSON polygons into `CityType[]` for `data`. | You have GeoJSON and do not want to hand-write SVG paths. |
 
-The root and `core` entries also export the named `useTurkeyMap` hook. The hook never imports the built-in dataset and requires `data`, so `turkey-map-react/core` is the smallest choice for a headless map with custom data. The root entry is roughly 96 kB gzipped, `core` is roughly 11 kB gzipped before your data, and `data` is roughly 81 kB gzipped. See [entry points and bundle size][entry-points] for examples and guidance.
+The root and `core` entries also export the named `useTurkeyMap` hook. The hook never imports the built-in dataset and requires `data`, so `turkey-map-react/core` is the smallest choice for a headless map with custom data. The root entry is roughly 96 kB gzipped, `core` is roughly 11 kB gzipped before your data, `data` is roughly 81 kB gzipped, and the optional `geojson` helper is roughly 3 kB gzipped. See [entry points and bundle size][entry-points] for examples and guidance.
 
 ## Documentation
 
@@ -153,6 +173,7 @@ Detailed guides live in [`docs/`](https://github.com/erdigokce/turkey-map-react/
 | [Headless hook][headless]                            | `useTurkeyMap` state, prop getters, custom metadata, non-SVG renderers, tooltips, and SSR.               |
 | [Selection and forms][selection]                     | Single and multiple selection, controlled and uncontrolled values, limits, and form integration.         |
 | [Custom data and cities][custom-data]                | Custom datasets, disabled provinces, and city wrapping.                                                 |
+| [GeoJSON conversion][geojson]                        | `geoJsonToCities`, key mapping, custom projections, viewBox fitting, holes, and limitations.              |
 | [Choropleth values][choropleth]                      | Numeric values, linear/quantize/quantile/threshold scales, no-data styling, and transitions.            |
 | [Zoom and pan][zoom-pan]                             | Opt-in gestures, controlled and uncontrolled viewports, keyboard shortcuts, controls, and the ref API.  |
 | [Tooltips][tooltips]                                 | Custom content, positioning, portals, delays, keyboard focus, and reduced motion.                       |
@@ -178,6 +199,7 @@ Derived from **dnomak**'s [svg-turkiye-haritasi][dnomak-link] project.
 [headless]: https://github.com/erdigokce/turkey-map-react/blob/master/docs/headless.md
 [selection]: https://github.com/erdigokce/turkey-map-react/blob/master/docs/selection.md
 [custom-data]: https://github.com/erdigokce/turkey-map-react/blob/master/docs/custom-data.md
+[geojson]: https://github.com/erdigokce/turkey-map-react/blob/master/docs/geojson.md
 [choropleth]: https://github.com/erdigokce/turkey-map-react/blob/master/docs/choropleth.md
 [zoom-pan]: https://github.com/erdigokce/turkey-map-react/blob/master/docs/zoom-pan.md
 [tooltips]: https://github.com/erdigokce/turkey-map-react/blob/master/docs/tooltips.md

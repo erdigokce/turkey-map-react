@@ -56,6 +56,16 @@ import CoreTurkeyMap, {
   useTurkeyMap as coreUseTurkeyMap,
 } from 'turkey-map-react/core';
 import { cities } from 'turkey-map-react/data';
+import {
+  geoJsonToCities,
+  GeoJsonFeature,
+  GeoJsonFeatureCollection,
+  GeoJsonKeyAccessor,
+  GeoJsonProject,
+  GeoJsonProperties,
+  GeoJsonToCitiesOptions,
+  GeoJsonViewBox,
+} from 'turkey-map-react/geojson';
 
 const city: CityType = {
   id: 'alpha',
@@ -474,7 +484,66 @@ const MissingDataHook = () => useTurkeyMap({});
 // @ts-expect-error the core entry requires a data prop
 const CoreWithoutData = () => <CoreTurkeyMap />;
 
-console.log(coreCity.id, datasetCity.id, datasetCoreCity.id, coreCity.id);
+const geoViewBox: GeoJsonViewBox = {
+  top: 0,
+  left: 0,
+  width: 100,
+  height: 100,
+};
+const geoCompatibleViewBox: ViewBoxType = geoViewBox;
+
+const geoProperties: GeoJsonProperties = {
+  ADM1_CODE: 'TR34',
+  NAME_1: 'Istanbul',
+  PLATE: '34',
+};
+const geoIdAccessor: GeoJsonKeyAccessor = (properties: GeoJsonProperties, _feature, index) => (
+  index === 0 ? String(properties.ADM1_CODE) : undefined
+);
+const geoProject: GeoJsonProject = (lon, lat) => [lon, -lat];
+const geoOptions: GeoJsonToCitiesOptions = {
+  idKey: geoIdAccessor,
+  nameKey: 'NAME_1',
+  plateKey: (properties) => Number(properties.PLATE),
+  project: geoProject,
+  viewBox: geoViewBox,
+  padding: 4,
+  precision: 3,
+};
+const geoFeature: GeoJsonFeature = {
+  type: 'Feature',
+  properties: geoProperties,
+  geometry: {
+    type: 'Polygon',
+    coordinates: [[[28, 41], [29, 41], [29, 42], [28, 41]]],
+  },
+};
+const geoFeatureCollection: GeoJsonFeatureCollection = {
+  type: 'FeatureCollection',
+  features: [geoFeature],
+};
+const geoCities: CityType[] = geoJsonToCities(geoFeature, geoOptions);
+const geoCitiesFromCollection: CityType[] = geoJsonToCities(geoFeatureCollection);
+const geoCitiesFromUnsupportedGeometry: CityType[] = geoJsonToCities({
+  type: 'Feature',
+  properties: { id: 'point' },
+  geometry: { type: 'Point', coordinates: [1, 2] },
+});
+
+const GeoJsonTypes = () => (
+  <span>{geoCities.map((city) => city.id).join(',')}</span>
+);
+
+console.log(
+  coreCity.id,
+  datasetCity.id,
+  datasetCoreCity.id,
+  coreCity.id,
+  geoCompatibleViewBox.width,
+  geoCities.length,
+  geoCitiesFromCollection.length,
+  geoCitiesFromUnsupportedGeometry.length,
+);
 
 export {
   ControlledMultiple,
@@ -484,6 +553,7 @@ export {
   CoreWithoutData,
   DefaultHookApp,
   FunctionScale,
+  GeoJsonTypes,
   HeadlessApp,
   MissingDataHook,
   RefApi,
