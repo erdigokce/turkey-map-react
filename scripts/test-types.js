@@ -22,6 +22,7 @@ import TurkeyMap, {
   ColorScale,
   ColorScaleFunction,
   CustomStyleType,
+  Data,
   GetColorCallback,
   IsCityDisabledCallback,
   OnMaxSelectionReachedCallback,
@@ -34,12 +35,21 @@ import TurkeyMap, {
   SelectionValue,
   TooltipPosition,
   TurkeyMapRef,
+  UseTurkeyMapCityProps,
+  UseTurkeyMapContainerProps,
+  UseTurkeyMapHandlers,
+  UseTurkeyMapOptions,
+  UseTurkeyMapPoint,
+  UseTurkeyMapResult,
+  UseTurkeyMapTooltipProps,
   ViewBoxType,
   Viewport,
+  useTurkeyMap,
 } from 'turkey-map-react';
 import CoreTurkeyMap, {
   CityType as CoreCityType,
   TurkeyMapRef as CoreTurkeyMapRef,
+  useTurkeyMap as coreUseTurkeyMap,
 } from 'turkey-map-react/core';
 import { cities } from 'turkey-map-react/data';
 
@@ -330,6 +340,89 @@ const RefApi = () => {
   );
 };
 
+type RegionCity = CityType & { region: string };
+
+const regionCity: RegionCity = {
+  ...city,
+  region: 'Marmara',
+};
+const regionData: Data<RegionCity> = { cities: [regionCity] };
+const defaultHookOptions: UseTurkeyMapOptions = { data: { cities: [city] } };
+
+const HeadlessApp = () => {
+  const result: UseTurkeyMapResult<RegionCity> = useTurkeyMap<RegionCity>({
+    data: regionData,
+    selectionMode: 'multiple',
+    selectedCities: [regionCity.id],
+    defaultSelectedCities: [regionCity.id],
+    maxSelection: 2,
+    onSelect: (selectedCity) => console.log(selectedCity.region),
+    onSelectionChange: (selectedCities) => (
+      console.log(selectedCities.map((selectedCity) => selectedCity.region))
+    ),
+    onMaxSelectionReached: (attemptedCity, selectedCities, maxSelection) => (
+      console.log(attemptedCity.region, selectedCities.length, maxSelection)
+    ),
+    onHover: (hoveredCity) => console.log(hoveredCity.region),
+    onClick: (clickedCity) => console.log(clickedCity.region),
+    isCityDisabled: (candidate) => candidate.region === 'blocked',
+    disabledCities: [],
+    showTooltip: true,
+    tooltipPosition: 'city',
+    tooltipPortal: true,
+    tooltipOffset: 8,
+    tooltipDelay: 20,
+    visible: true,
+    hoverable: true,
+    ariaLabel: 'Headless map',
+  });
+
+  const containerProps: UseTurkeyMapContainerProps = result.getContainerProps();
+  const cityProps: UseTurkeyMapCityProps = result.getCityProps(regionCity);
+  const tooltipProps: UseTurkeyMapTooltipProps = result.getTooltipProps();
+  const handlers: UseTurkeyMapHandlers<RegionCity> = result.cityHandlers;
+  const point: UseTurkeyMapPoint = { pageX: 1, pageY: 2, clientX: 3, clientY: 4 };
+  const element = document.body;
+  handlers.onEnter(regionCity, element, point);
+  handlers.onLeave(regionCity);
+  handlers.onMove(regionCity, element, point);
+  handlers.onHover(regionCity, {} as React.MouseEvent<Element>);
+  handlers.onClick(regionCity, {} as React.MouseEvent<Element>);
+  handlers.onActivate(regionCity);
+  handlers.onKeyDown(regionCity, {} as React.KeyboardEvent<Element>);
+  handlers.onFocus(regionCity, element);
+  handlers.onBlur(regionCity);
+  result.activateCity(regionCity);
+  result.changeSelection([regionCity.id]);
+  result.clearSelection();
+
+  return (
+    <div {...containerProps}>
+      <div {...cityProps}>{result.selectedCities[0]?.region}</div>
+      <div {...tooltipProps}>{result.announcement}</div>
+      <span>{result.isCityDisabled(regionCity) ? 'disabled' : 'enabled'}</span>
+      <span>{result.tooltipCity?.region ?? result.rovingCityId ?? ''}</span>
+      <span>{result.focusedCityId ?? ''}</span>
+      <span>{String(result.tooltipVisible)}</span>
+      <span>{result.cityHandlers === handlers ? 'same' : 'other'}</span>
+      <span>{result.registerCityHoverClear(regionCity.id, () => {}) ? 'clear' : 'no clear'}</span>
+    </div>
+  );
+};
+
+const DefaultHookApp = () => {
+  const result = useTurkeyMap(defaultHookOptions);
+  return <span>{result.selectedCities[0]?.id}</span>;
+};
+
+const CoreHookApp = () => {
+  const result = coreUseTurkeyMap({ data: regionData });
+  return <span>{result.selectedIds.join(',')}</span>;
+};
+
+// @ts-expect-error the hook requires a data prop
+const MissingDataHook = () => useTurkeyMap({});
+
 // @ts-expect-error the core entry requires a data prop
 const CoreWithoutData = () => <CoreTurkeyMap />;
 
@@ -339,8 +432,12 @@ export {
   ControlledMultiple,
   ControlledSingle,
   CoreApp,
+  CoreHookApp,
   CoreWithoutData,
+  DefaultHookApp,
   FunctionScale,
+  HeadlessApp,
+  MissingDataHook,
   RefApi,
   SingleArgumentTooltip,
   ThresholdScale,

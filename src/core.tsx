@@ -11,6 +11,7 @@ import { createPortal } from 'react-dom';
 import Tooltip from './Tooltip';
 import { createColorResolver, getFiniteValue } from './color-scale';
 import usePrefersReducedMotion from './usePrefersReducedMotion';
+import useTurkeyMap from './useTurkeyMap';
 import {
   centerOnPoint,
   clampScale,
@@ -32,9 +33,6 @@ import type {
   CityStyleGetter,
   CityType,
   CityWrapper,
-  ColorScale,
-  ColorScaleFunction,
-  CustomStyleType,
   Data,
   GetColorCallback,
   IsCityDisabledCallback,
@@ -48,9 +46,13 @@ import type {
   TooltipPosition,
   TurkeyMapProps,
   TurkeyMapRef,
+  UseTurkeyMapOptions,
+  UseTurkeyMapPoint,
   ViewBoxType,
   Viewport,
 } from './types';
+
+export { default as useTurkeyMap } from './useTurkeyMap';
 
 export type {
   ChoroplethValues,
@@ -75,6 +77,13 @@ export type {
   TooltipPosition,
   TurkeyMapProps,
   TurkeyMapRef,
+  UseTurkeyMapCityProps,
+  UseTurkeyMapContainerProps,
+  UseTurkeyMapHandlers,
+  UseTurkeyMapOptions,
+  UseTurkeyMapPoint,
+  UseTurkeyMapResult,
+  UseTurkeyMapTooltipProps,
   ViewBoxType,
   Viewport,
 } from './types';
@@ -92,26 +101,6 @@ type ResolvedStyle = {
   strokeWidth: string | number;
   focusStroke: string;
   focusStrokeWidth: number;
-};
-
-type LatestValues = {
-  onHover?: (city: CityType) => void;
-  onClick?: (city: CityType) => void;
-  cityWrapper?: CityWrapper;
-  isCityDisabled?: IsCityDisabledCallback;
-  activateCity: (city: CityType) => void;
-  selectionMode: SelectionMode;
-  showTooltip: boolean;
-  animationName: string;
-  tooltipPosition: TooltipPosition;
-  tooltipPortal: boolean;
-  tooltipOffset: number;
-  tooltipDelay: number;
-  prefersReducedMotion: boolean;
-  selectedIdSet: Set<string>;
-  disabledIdSet: Set<string>;
-  clearSelection: () => void;
-  cityData: CityType[];
 };
 
 type TooltipPoint = {
@@ -153,18 +142,6 @@ const touchDragThreshold = 8;
 const doubleClickZoomFactor = 1.5;
 const keyboardZoomFactor = 1.5;
 const keyboardPanFraction = 0.1;
-
-const normalizeTooltipOffset = (value: number | undefined): number => (
-  typeof value === "number" && Number.isFinite(value)
-    ? Math.max(0, value)
-    : defaultTooltipOffset
-);
-
-const normalizeTooltipDelay = (value: number | undefined): number => (
-  typeof value === "number" && Number.isFinite(value)
-    ? Math.max(0, value)
-    : defaultTooltipDelay
-);
 
 const cssVar = (name: string, fallback: string | number): string => `var(--${name}, ${fallback})`;
 
@@ -217,21 +194,6 @@ const mergeDefined = (
   return result;
 };
 
-const normalizeIds = (value: string | string[] | null | undefined): string[] => {
-  const values = Array.isArray(value) ? value : value === null || value === undefined ? [] : [value];
-  const seen = new Set<string>();
-  const ids: string[] = [];
-
-  for (const id of values) {
-    if (!seen.has(id)) {
-      seen.add(id);
-      ids.push(id);
-    }
-  }
-
-  return ids;
-};
-
 const warnInDevelopment = (message: string): void => {
   if (typeof process !== "undefined" && process.env.NODE_ENV !== "production") {
     console.warn(message);
@@ -253,7 +215,7 @@ const visuallyHiddenStyle: React.CSSProperties = {
 };
 
 const getCityPayloadFromEvent = (
-  event: React.MouseEvent<SVGGElement, MouseEvent>,
+  event: React.MouseEvent<Element, MouseEvent>,
 ): CityType => {
   const element = event.target as Element;
   const parent = element.parentNode as Element;
@@ -272,12 +234,14 @@ const getCityPayloadFromEvent = (
 type ProvinceProps = {
   city: CityType;
   isSelected: boolean;
-  isAriaSelected: boolean;
   isDisabled: boolean;
-  isRoving: boolean;
-  isSelectionEnabled: boolean;
   hoverable: boolean;
   showTooltip: boolean;
+  role: "option" | "button";
+  ariaSelected?: boolean;
+  ariaDisabled?: "true";
+  tabIndex: 0 | -1;
+  dataCityId: string;
   resolvedStyle: ResolvedStyle;
   focusStyle: React.CSSProperties;
   choroplethActive: boolean;
@@ -286,13 +250,14 @@ type ProvinceProps = {
   prefersReducedMotion: boolean;
   getCityStyle?: CityStyleGetter;
   cityWrapper?: CityWrapper;
-  onEnterCity: (city: CityType, element: SVGGElement, point: TooltipPoint) => void;
+  onEnterCity: (city: CityType, element: Element, point: UseTurkeyMapPoint) => void;
   onLeaveCity: (city: CityType) => void;
-  onHoverCity: (event: React.MouseEvent<SVGGElement, MouseEvent>, city: CityType) => void;
-  onClickCity: (event: React.MouseEvent<SVGGElement, MouseEvent>, city: CityType) => void;
-  onKeyDownCity: (event: React.KeyboardEvent<SVGGElement>, city: CityType) => void;
-  onMoveCity: (element: SVGGElement, point: TooltipPoint) => void;
-  onFocusCity: (city: CityType, element: SVGGElement) => void;
+  onHoverCity: (city: CityType, event: React.MouseEvent<Element, MouseEvent>) => void;
+  onClickCity: (city: CityType, event: React.MouseEvent<Element, MouseEvent>) => void;
+  onActivateCity: (city: CityType, event?: React.MouseEvent<Element, MouseEvent>) => void;
+  onKeyDownCity: (city: CityType, event: React.KeyboardEvent<Element>) => void;
+  onMoveCity: (city: CityType, element: Element, point: UseTurkeyMapPoint) => void;
+  onFocusCity: (city: CityType, element: Element) => void;
   onBlurCity: (city: CityType) => void;
   registerHoverClear: (cityId: string, clearHover: () => void) => () => void;
 };
@@ -300,12 +265,14 @@ type ProvinceProps = {
 const ProvinceComponent = ({
   city,
   isSelected,
-  isAriaSelected,
   isDisabled,
-  isRoving,
-  isSelectionEnabled,
   hoverable,
   showTooltip,
+  role,
+  ariaSelected,
+  ariaDisabled,
+  tabIndex,
+  dataCityId,
   resolvedStyle,
   focusStyle,
   choroplethActive,
@@ -318,6 +285,7 @@ const ProvinceComponent = ({
   onLeaveCity,
   onHoverCity,
   onClickCity,
+  onActivateCity,
   onKeyDownCity,
   onMoveCity,
   onFocusCity,
@@ -331,8 +299,8 @@ const ProvinceComponent = ({
   const pointerEventsSupported = typeof window !== "undefined" && "PointerEvent" in window;
 
   const enterCity = useCallback((
-    element: SVGGElement,
-    point: TooltipPoint,
+    element: Element,
+    point: UseTurkeyMapPoint,
   ): void => {
     setHovered(true);
     onEnterCity(city, element, point);
@@ -381,8 +349,8 @@ const ProvinceComponent = ({
   const handleMove = useCallback((
     event: React.MouseEvent<SVGGElement> | React.PointerEvent<SVGGElement>,
   ): void => {
-    onMoveCity(event.currentTarget, toTooltipPoint(event));
-  }, [onMoveCity]);
+    onMoveCity(city, event.currentTarget, toTooltipPoint(event));
+  }, [city, onMoveCity]);
 
   const handlePointerMove = useCallback((event: React.PointerEvent<SVGGElement>): void => {
     if (!pointerEventsSupported) {
@@ -403,7 +371,7 @@ const ProvinceComponent = ({
     if (element.tagName !== 'path') {
       return;
     }
-    onHoverCity(event, city);
+    onHoverCity(city, event);
   }, [city, onHoverCity]);
 
   const handleClick = useCallback((event: React.MouseEvent<SVGGElement, MouseEvent>): void => {
@@ -411,7 +379,7 @@ const ProvinceComponent = ({
     if (element.tagName !== 'path') {
       return;
     }
-    onClickCity(event, city);
+    onClickCity(city, event);
   }, [city, onClickCity]);
 
   const handleFocus = useCallback((event: React.FocusEvent<SVGGElement>): void => {
@@ -443,7 +411,7 @@ const ProvinceComponent = ({
   const handleKeyDown = useCallback((
     event: React.KeyboardEvent<SVGGElement>,
   ): void => {
-    onKeyDownCity(event, city);
+    onKeyDownCity(city, event);
   }, [city, onKeyDownCity]);
 
   useEffect(() => {
@@ -530,13 +498,13 @@ const ProvinceComponent = ({
   const cityElement = (
     <g
       id={city.id}
-      data-tm-city-id={city.id}
+      data-tm-city-id={dataCityId}
       data-plakakodu={city.plateNumber}
       data-iladi={city.name}
-      role={isSelectionEnabled ? "option" : "button"}
+      role={role}
       aria-label={getCityLabel(city)}
-      aria-selected={isSelectionEnabled ? isAriaSelected : undefined}
-      aria-disabled={isDisabled ? "true" : undefined}
+      aria-selected={ariaSelected}
+      aria-disabled={ariaDisabled}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
       onPointerEnter={handlePointerEnter}
@@ -550,7 +518,7 @@ const ProvinceComponent = ({
       onMouseMove={showTooltip ? handleMouseMove : undefined}
       onPointerMove={showTooltip ? handlePointerMove : undefined}
       onClick={isDisabled ? undefined : handleClick}
-      tabIndex={isRoving ? 0 : -1}
+      tabIndex={tabIndex}
       onKeyDown={handleKeyDown}
       onFocus={handleFocus}
       onBlur={handleBlur}
@@ -621,38 +589,11 @@ const CoreTurkeyMap = forwardRef<TurkeyMapRef, CoreProps>(function CoreTurkeyMap
   ariaLabel = "Turkey map",
   a11yFallback = false,
 }, ref) {
-  const [selectedIds, setSelectedIds] = useState<string[]>(() => {
-    if (selectionMode === "single") {
-      return normalizeIds(defaultSelectedCity).slice(0, 1);
-    }
-    if (selectionMode === "multiple") {
-      return normalizeIds(defaultSelectedCities);
-    }
-    return [];
-  });
-  const [tooltipCityId, setTooltipCityId] = useState<string | undefined>(undefined);
-  const [tooltipVisible, setTooltipVisible] = useState(false);
-  const [tooltipStyle, setTooltipStyle] = useState<React.CSSProperties>({
-    left: 0,
-    top: 0,
-    visibility: "hidden",
-  });
   const [mounted, setMounted] = useState(false);
   const prefersReducedMotion = usePrefersReducedMotion();
-  const resolvedTooltipOffset = normalizeTooltipOffset(tooltipOffset);
-  const resolvedTooltipDelay = normalizeTooltipDelay(tooltipDelay);
-  const revealTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-  const hideTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-  const lastAnchorRef = useRef<TooltipPoint | undefined>(undefined);
-  const cityElementsRef = useRef(new Map<string, SVGGElement>());
-  const provinceGroupRef = useRef<SVGGElement | null>(null);
-  const focusedCityIdRef = useRef<string | undefined>(undefined);
-  const [rovingCityId, setRovingCityId] = useState<string | undefined>(undefined);
-  const [announcement, setAnnouncement] = useState("");
-  const tooltipVisibleRef = useRef(tooltipVisible);
-  const tooltipStyleRef = useRef(tooltipStyle);
-  tooltipVisibleRef.current = tooltipVisible;
-  tooltipStyleRef.current = tooltipStyle;
+  const resolvedIds = getResolvedIds(normalizeInstanceId(id));
+  const animationName = getAnimationName(normalizeInstanceId(id));
+  const cityData = data?.cities ?? [];
 
   const zoomBounds = useMemo(
     () => normalizeZoomBounds(minZoom, maxZoom),
@@ -683,6 +624,7 @@ const CoreTurkeyMap = forwardRef<TurkeyMapRef, CoreProps>(function CoreTurkeyMap
   const zoomableRef = useRef(zoomable);
   zoomableRef.current = zoomable;
   const svgRef = useRef<SVGSVGElement | null>(null);
+  const provinceGroupRef = useRef<SVGGElement | null>(null);
   const activePointersRef = useRef(new Map<number, { x: number; y: number }>());
   const gestureRef = useRef<{
     startX: number;
@@ -696,82 +638,6 @@ const CoreTurkeyMap = forwardRef<TurkeyMapRef, CoreProps>(function CoreTurkeyMap
   const suppressClickRef = useRef(false);
   const suppressClickTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
-  const applyViewport = useCallback((next: Viewport): boolean => {
-    const normalized = clampViewport(next, viewBoxRef.current, zoomBoundsRef.current);
-
-    if (isSameViewport(effectiveViewportRef.current, normalized)) {
-      return false;
-    }
-
-    effectiveViewportRef.current = normalized;
-
-    if (!viewportControlledRef.current) {
-      setInternalViewport(normalized);
-    }
-
-    if (onViewportChangeRef.current) {
-      onViewportChangeRef.current(normalized);
-    }
-
-    return true;
-  }, []);
-  const resetViewport = useMemo(
-    () => getResetViewport(zoomBounds, viewBox),
-    [zoomBounds, viewBox],
-  );
-
-  const singleControlled = selectedCity !== undefined;
-  const multipleControlled = selectedCities !== undefined;
-  const controlled = selectionMode === "single"
-    ? singleControlled
-    : selectionMode === "multiple"
-      ? multipleControlled
-      : false;
-  const isSelectionEnabled = selectionMode !== "none";
-
-  const effectiveIds = useMemo(() => {
-    if (selectionMode === "single") {
-      return singleControlled
-        ? normalizeIds(selectedCity).slice(0, 1)
-        : selectedIds.slice(0, 1);
-    }
-    if (selectionMode === "multiple") {
-      return multipleControlled ? normalizeIds(selectedCities) : selectedIds;
-    }
-    return [];
-  }, [selectionMode, singleControlled, selectedCity, multipleControlled, selectedCities, selectedIds]);
-
-  const cityData = data?.cities ?? [];
-
-  const cityById = useMemo(() => {
-    const map = new Map<string, CityType>();
-    cityData.forEach((city) => {
-      map.set(city.id, city);
-    });
-    return map;
-  }, [cityData]);
-
-  const mapIdsToCities = useCallback((ids: string[]): CityType[] => {
-    const result: CityType[] = [];
-    ids.forEach((id) => {
-      const city = cityById.get(id);
-      if (city) {
-        result.push(city);
-      }
-    });
-    return result;
-  }, [cityById]);
-
-  const selectedCityObjects = useMemo(
-    () => mapIdsToCities(effectiveIds),
-    [effectiveIds, mapIdsToCities],
-  );
-  const selectedIdSet = useMemo(() => new Set(effectiveIds), [effectiveIds]);
-
-  const disabledIdSet = useMemo(() => new Set(disabledCities ?? []), [disabledCities]);
-
-  const resolvedIds = getResolvedIds(normalizeInstanceId(id));
-  const animationName = getAnimationName(normalizeInstanceId(id));
   const resolvedStyle: ResolvedStyle = useMemo(() => ({
     idleColor: customStyle?.idleColor ?? cssVar("tm-idle-color", "#444"),
     hoverColor: customStyle?.hoverColor ?? cssVar("tm-hover-color", "#dc3522"),
@@ -801,6 +667,7 @@ const CoreTurkeyMap = forwardRef<TurkeyMapRef, CoreProps>(function CoreTurkeyMap
     outlineOffset: 2,
   }), [resolvedStyle.focusStroke, resolvedStyle.focusStrokeWidth]);
 
+  const isSelectionEnabled = selectionMode !== "none";
   const choroplethActive = values !== undefined;
   const resolvedNoDataColor = noDataColor ?? cssVar("tm-no-data-color", "#eeeeee");
   const colorResolver = useMemo(
@@ -825,89 +692,37 @@ const CoreTurkeyMap = forwardRef<TurkeyMapRef, CoreProps>(function CoreTurkeyMap
     ],
   );
 
-  const hasValidMaxSelection = maxSelection !== undefined
-    && Number.isInteger(maxSelection)
-    && maxSelection >= 1;
-  const effectiveMaxSelection = hasValidMaxSelection ? maxSelection : undefined;
+  const applyViewport = useCallback((next: Viewport): boolean => {
+    const normalized = clampViewport(next, viewBoxRef.current, zoomBoundsRef.current);
 
-  useEffect(() => {
-    const hasSelectionProps = selectedCity !== undefined
-      || defaultSelectedCity !== undefined
-      || selectedCities !== undefined
-      || defaultSelectedCities !== undefined
-      || maxSelection !== undefined
-      || onSelect !== undefined
-      || onSelectionChange !== undefined
-      || onMaxSelectionReached !== undefined;
-
-    if (selectionMode === "none" && hasSelectionProps) {
-      warnInDevelopment(
-        "turkey-map-react: selection props require selectionMode=\"single\" or \"multiple\"; they are ignored in \"none\" mode.",
-      );
+    if (isSameViewport(effectiveViewportRef.current, normalized)) {
+      return false;
     }
 
+    effectiveViewportRef.current = normalized;
+
+    if (!viewportControlledRef.current) {
+      setInternalViewport(normalized);
+    }
+
+    if (onViewportChangeRef.current) {
+      onViewportChangeRef.current(normalized);
+    }
+
+    return true;
+  }, []);
+  const resetViewport = useMemo(
+    () => getResetViewport(zoomBounds, viewBox),
+    [zoomBounds, viewBox],
+  );
+
+  useEffect(() => {
     if (selectionMode === "none" && a11yFallback) {
       warnInDevelopment(
         "turkey-map-react: a11yFallback requires selectionMode=\"single\" or \"multiple\" and is ignored in \"none\" mode.",
       );
     }
-
-    if (selectionMode === "single" && (selectedCities !== undefined || defaultSelectedCities !== undefined)) {
-      warnInDevelopment(
-        "turkey-map-react: multiple selection props are ignored when selectionMode is \"single\".",
-      );
-    }
-
-    if (selectionMode === "multiple" && (selectedCity !== undefined || defaultSelectedCity !== undefined)) {
-      warnInDevelopment(
-        "turkey-map-react: single selection props are ignored when selectionMode is \"multiple\".",
-      );
-    }
-
-    if (selectedCity !== undefined && defaultSelectedCity !== undefined) {
-      warnInDevelopment(
-        "turkey-map-react: selectedCity is controlled and takes precedence over defaultSelectedCity; remove defaultSelectedCity.",
-      );
-    }
-
-    if (selectedCities !== undefined && defaultSelectedCities !== undefined) {
-      warnInDevelopment(
-        "turkey-map-react: selectedCities is controlled and takes precedence over defaultSelectedCities; remove defaultSelectedCities.",
-      );
-    }
-
-    if (maxSelection !== undefined && !hasValidMaxSelection) {
-      warnInDevelopment(
-        `turkey-map-react: maxSelection must be a positive integer; received ${maxSelection}. No limit is applied.`,
-      );
-    }
-  }, [
-    selectionMode,
-    selectedCity,
-    defaultSelectedCity,
-    selectedCities,
-    defaultSelectedCities,
-    maxSelection,
-    hasValidMaxSelection,
-    onSelect,
-    onSelectionChange,
-    onMaxSelectionReached,
-    a11yFallback,
-  ]);
-
-  useEffect(() => {
-    if (
-      selectionMode === "multiple"
-      && multipleControlled
-      && hasValidMaxSelection
-      && effectiveIds.length > (maxSelection as number)
-    ) {
-      warnInDevelopment(
-        `turkey-map-react: the controlled selectedCities value contains ${effectiveIds.length} cities, `
-        + `which exceeds maxSelection (${maxSelection}); controlled values are rendered as supplied.`,
-      );
-    }
-  }, [selectionMode, multipleControlled, hasValidMaxSelection, maxSelection, effectiveIds.length]);
+  }, [selectionMode, a11yFallback]);
 
   useEffect(() => {
     if (!zoomable) {
@@ -955,137 +770,96 @@ const CoreTurkeyMap = forwardRef<TurkeyMapRef, CoreProps>(function CoreTurkeyMap
     zoomBounds.maxZoom,
   ]);
 
-  const commitSelection = useCallback((
-    nextIds: string[],
-    selectedCitiesToNotify: CityType[],
-  ): boolean => {
-    const currentIds = effectiveIds;
-    const changed = nextIds.length !== currentIds.length
-      || nextIds.some((id, index) => id !== currentIds[index]);
-
-    selectedCitiesToNotify.forEach((city) => {
-      if (onSelect) {
-        onSelect(city);
-      }
-    });
-
-    if (!changed) {
-      return false;
+  useEffect(() => {
+    if (tooltipPortal) {
+      setMounted(true);
     }
+  }, [tooltipPortal]);
 
-    if (!controlled) {
-      setSelectedIds(nextIds);
+  const handleHoverCallback = useCallback((
+    city: CityType,
+    event: React.MouseEvent<Element, MouseEvent>,
+  ): void => {
+    if (!onHover) {
+      return;
     }
+    onHover(cityWrapper ? getCityPayloadFromEvent(event) : city);
+  }, [onHover, cityWrapper]);
 
-    if (onSelectionChange) {
-      onSelectionChange(mapIdsToCities(nextIds));
+  const handleClickCallback = useCallback((
+    city: CityType,
+    event?: React.MouseEvent<Element, MouseEvent>,
+  ): void => {
+    if (!onClick) {
+      return;
     }
+    onClick(cityWrapper && event ? getCityPayloadFromEvent(event) : city);
+  }, [onClick, cityWrapper]);
 
-    return true;
-  }, [
-    effectiveIds,
+  const hookOptions: UseTurkeyMapOptions = {
+    data,
+    visible,
+    hoverable,
+    showTooltip,
+    tooltipPosition,
+    tooltipPortal,
+    tooltipOffset,
+    tooltipDelay,
+    tooltipAnimationName: animationName,
+    tooltipRefreshKey: zoomable
+      ? `${effectiveViewport.scale}:${effectiveViewport.translateX}:${effectiveViewport.translateY}`
+      : undefined,
+    disabledCities,
+    isCityDisabled,
+    onHover: handleHoverCallback,
+    onClick: handleClickCallback,
+    selectionMode,
+    selectedCity,
+    defaultSelectedCity,
+    selectedCities,
+    defaultSelectedCities,
+    maxSelection,
     onSelect,
-    controlled,
     onSelectionChange,
-    mapIdsToCities,
-  ]);
-
-  const activateCity = useCallback((city: CityType) => {
-    const currentIds = effectiveIds;
-    let nextIds: string[];
-    let isSelectAction = true;
-
-    if (selectionMode === "single") {
-      nextIds = [city.id];
-    } else if (currentIds.includes(city.id)) {
-      nextIds = currentIds.filter((id) => id !== city.id);
-      isSelectAction = false;
-    } else {
-      if (effectiveMaxSelection !== undefined && currentIds.length >= effectiveMaxSelection) {
-        if (onMaxSelectionReached) {
-          onMaxSelectionReached(city, selectedCityObjects, effectiveMaxSelection);
-        } else {
-          warnInDevelopment(
-            `turkey-map-react: maximum selection of ${effectiveMaxSelection} cities reached; "${city.name}" was not added.`,
-          );
-        }
-        return;
-      }
-      nextIds = [...currentIds, city.id];
-    }
-
-    const changed = commitSelection(nextIds, isSelectAction ? [city] : []);
-
-    if (!changed) {
-      return;
-    }
-
-    setAnnouncement(
-      `${getCityLabel(city)}, ${isSelectAction ? "selected" : "not selected"}`,
-    );
-  }, [
-    selectionMode,
-    effectiveIds,
-    effectiveMaxSelection,
-    selectedCityObjects,
     onMaxSelectionReached,
-    commitSelection,
-  ]);
+    ariaLabel,
+  };
 
-  const clearSelection = useCallback((): void => {
-    if (effectiveIds.length === 0) {
+  const {
+    selectedIds,
+    rovingCityId,
+    tooltipCity,
+    tooltipVisible,
+    announcement,
+    isCityDisabled: resolveCityDisabled,
+    changeSelection,
+    getContainerProps,
+    getTooltipProps,
+    cityHandlers,
+    registerCityHoverClear,
+  } = useTurkeyMap(hookOptions);
+
+  const selectedIdSet = useMemo(() => new Set(selectedIds), [selectedIds]);
+
+  const handleClickCity = useCallback((
+    city: CityType,
+    event: React.MouseEvent<Element, MouseEvent>,
+  ): void => {
+    if (suppressClickRef.current) {
+      suppressClickRef.current = false;
       return;
     }
+    cityHandlers.onClick(city, event);
+  }, [cityHandlers]);
 
-    if (!controlled) {
-      setSelectedIds([]);
-    }
-
-    if (onSelectionChange) {
-      onSelectionChange([]);
-    }
-
-    setAnnouncement("No province selected");
-  }, [effectiveIds.length, controlled, onSelectionChange]);
-
-  const latest = useRef<LatestValues>({
-    onHover,
-    onClick,
-    cityWrapper,
-    isCityDisabled,
-    activateCity,
-    selectionMode,
-    showTooltip,
-    animationName,
-    tooltipPosition,
-    tooltipPortal,
-    tooltipOffset: resolvedTooltipOffset,
-    tooltipDelay: resolvedTooltipDelay,
-    prefersReducedMotion,
-    selectedIdSet,
-    disabledIdSet,
-    clearSelection,
-    cityData,
-  });
-  latest.current = {
-    onHover,
-    onClick,
-    cityWrapper,
-    isCityDisabled,
-    activateCity,
-    selectionMode,
-    showTooltip,
-    animationName,
-    tooltipPosition,
-    tooltipPortal,
-    tooltipOffset: resolvedTooltipOffset,
-    tooltipDelay: resolvedTooltipDelay,
-    prefersReducedMotion,
-    selectedIdSet,
-    disabledIdSet,
-    clearSelection,
-    cityData,
-  };
+  const handleFallbackChange = useCallback((event: React.ChangeEvent<HTMLSelectElement>): void => {
+    const requestedIds = selectionMode === "multiple"
+      ? Array.from(event.currentTarget.selectedOptions).map((option) => option.value)
+      : event.currentTarget.value
+        ? [event.currentTarget.value]
+        : [];
+    changeSelection(requestedIds);
+  }, [selectionMode, changeSelection]);
 
   useImperativeHandle(ref, () => ({
     focusCity: (cityId: string, zoom?: number): void => {
@@ -1099,7 +873,7 @@ const CoreTurkeyMap = forwardRef<TurkeyMapRef, CoreProps>(function CoreTurkeyMap
         return;
       }
 
-      const city = latest.current.cityData.find((candidate) => candidate.id === cityId);
+      const city = cityData.find((candidate) => candidate.id === cityId);
       if (!city) {
         warnInDevelopment(
           `turkey-map-react: focusCity could not find a city with id "${cityId}".`,
@@ -1177,352 +951,7 @@ const CoreTurkeyMap = forwardRef<TurkeyMapRef, CoreProps>(function CoreTurkeyMap
 
       applyViewport(getResetViewport(zoomBoundsRef.current, viewBoxRef.current));
     },
-  }), [applyViewport]);
-
-  const hoveredCityIdRef = useRef<string | undefined>(undefined);
-  const hoverClearRef = useRef(new Map<string, () => void>());
-
-  const resolveCityDisabled = (city: CityType): boolean => (
-    disabledIdSet.has(city.id)
-    || city.disabled === true
-    || (latest.current.isCityDisabled ? latest.current.isCityDisabled(city) : false)
-  );
-
-  const resolvedRovingId = (() => {
-    if (rovingCityId !== undefined && cityData.some((city) => city.id === rovingCityId)) {
-      return rovingCityId;
-    }
-
-    const firstSelected = cityData.find((city) => selectedIdSet.has(city.id));
-    if (firstSelected) {
-      return firstSelected.id;
-    }
-
-    const firstEnabled = cityData.find((city) => !resolveCityDisabled(city));
-    if (firstEnabled) {
-      return firstEnabled.id;
-    }
-
-    return cityData[0]?.id;
-  })();
-
-  const focusCityAt = useCallback((index: number): void => {
-    const cities = latest.current.cityData;
-    /* istanbul ignore if */
-    if (cities.length === 0) {
-      return;
-    }
-
-    const clampedIndex = Math.min(Math.max(index, 0), cities.length - 1);
-    const targetCity = cities[clampedIndex];
-    setRovingCityId(targetCity.id);
-
-    const group = provinceGroupRef.current;
-    /* istanbul ignore if */
-    if (!group) {
-      return;
-    }
-
-    const elements = group.querySelectorAll('[data-tm-city-id]');
-    for (let elementIndex = 0; elementIndex < elements.length; elementIndex += 1) {
-      const element = elements[elementIndex];
-      if (element.getAttribute('data-tm-city-id') === targetCity.id) {
-        const focusableElement = element as SVGGElement;
-        if (typeof focusableElement.focus === 'function') {
-          focusableElement.focus();
-        }
-        return;
-      }
-    }
-  }, []);
-
-  const registerHoverClear = useCallback((cityId: string, clearHover: () => void): (() => void) => {
-    hoverClearRef.current.set(cityId, clearHover);
-    return () => {
-      hoverClearRef.current.delete(cityId);
-    };
-  }, []);
-
-  const getCityPayload = (
-    event: React.MouseEvent<SVGGElement, MouseEvent>,
-    city: CityType,
-  ): CityType => {
-    if (!latest.current.cityWrapper) {
-      return {
-        id: city.id,
-        name: city.name,
-        plateNumber: city.plateNumber,
-        path: city.path,
-      };
-    }
-
-    return getCityPayloadFromEvent(event);
-  };
-
-  const clearRevealTimer = useCallback((): void => {
-    if (revealTimerRef.current !== undefined) {
-      clearTimeout(revealTimerRef.current);
-      revealTimerRef.current = undefined;
-    }
-  }, []);
-
-  const clearHideTimer = useCallback((): void => {
-    if (hideTimerRef.current !== undefined) {
-      clearTimeout(hideTimerRef.current);
-      hideTimerRef.current = undefined;
-    }
-  }, []);
-
-  const getTooltipCursorStyle = useCallback((point: TooltipPoint): React.CSSProperties => {
-    const { tooltipPortal: usePortal, tooltipOffset: offset } = latest.current;
-    return {
-      position: usePortal ? "fixed" : "absolute",
-      left: (usePortal ? point.clientX : point.pageX) + offset,
-      top: (usePortal ? point.clientY : point.pageY) - 2 * offset,
-      transform: undefined,
-    };
-  }, []);
-
-  const getTooltipCityStyle = useCallback((element: SVGGElement): React.CSSProperties => {
-    const { tooltipPortal: usePortal, tooltipOffset: offset } = latest.current;
-    const rect = element.getBoundingClientRect();
-    const scrollX = !usePortal && typeof window !== "undefined" ? window.scrollX : 0;
-    const scrollY = !usePortal && typeof window !== "undefined" ? window.scrollY : 0;
-
-    return {
-      position: usePortal ? "fixed" : "absolute",
-      left: rect.left + rect.width / 2 + scrollX,
-      top: rect.top + scrollY - offset,
-      transform: "translate(-50%, -100%)",
-    };
-  }, []);
-
-  const hideTooltip = useCallback((): void => {
-    tooltipVisibleRef.current = false;
-    setTooltipVisible(false);
-    setTooltipStyle((prevState) => (
-      latest.current.prefersReducedMotion
-        ? { ...prevState, visibility: "hidden", animation: undefined }
-        : {
-          ...prevState,
-          visibility: undefined,
-          animation: `0.1s ${latest.current.animationName} forwards ease-out`,
-        }
-    ));
-  }, []);
-
-  const scheduleTooltipHide = useCallback((): void => {
-    clearRevealTimer();
-    clearHideTimer();
-    if (latest.current.tooltipDelay === 0) {
-      hideTooltip();
-      return;
-    }
-    hideTimerRef.current = setTimeout(() => {
-      hideTimerRef.current = undefined;
-      hideTooltip();
-    }, latest.current.tooltipDelay);
-  }, [clearRevealTimer, clearHideTimer, hideTooltip]);
-
-  const revealTooltip = useCallback((cityId: string, style: React.CSSProperties): void => {
-    tooltipVisibleRef.current = true;
-    setTooltipCityId(cityId);
-    setTooltipVisible(true);
-    setTooltipStyle((prevState) => ({
-      ...prevState,
-      ...style,
-      animation: undefined,
-      visibility: "visible",
-    }));
-  }, []);
-
-  const handleTooltipEnter = useCallback((
-    cityId: string,
-    element: SVGGElement,
-    point: TooltipPoint,
-  ): void => {
-    cityElementsRef.current.set(cityId, element);
-    lastAnchorRef.current = point;
-    if (!latest.current.showTooltip) {
-      return;
-    }
-
-    clearHideTimer();
-    clearRevealTimer();
-
-    const style = latest.current.tooltipPosition === "city"
-      ? getTooltipCityStyle(element)
-      : getTooltipCursorStyle(point);
-    const keepVisible = tooltipVisibleRef.current
-      || Boolean(tooltipStyleRef.current.animation);
-
-    setTooltipCityId(cityId);
-
-    if (keepVisible) {
-      revealTooltip(cityId, style);
-      return;
-    }
-
-    setTooltipStyle((prevState) => ({ ...prevState, ...style }));
-    if (latest.current.tooltipDelay === 0) {
-      revealTooltip(cityId, style);
-      return;
-    }
-
-    revealTimerRef.current = setTimeout(() => {
-      revealTimerRef.current = undefined;
-      const revealStyle = latest.current.tooltipPosition === "city"
-        ? getTooltipCityStyle(element)
-        : lastAnchorRef.current
-          ? getTooltipCursorStyle(lastAnchorRef.current)
-          : style;
-      revealTooltip(cityId, revealStyle);
-    }, latest.current.tooltipDelay);
-  }, [clearHideTimer, clearRevealTimer, getTooltipCityStyle, getTooltipCursorStyle, revealTooltip]);
-
-  const handleTooltipLeave = useCallback((): void => {
-    if (!latest.current.showTooltip) {
-      return;
-    }
-
-    clearRevealTimer();
-
-    const focusedCityId = focusedCityIdRef.current;
-    if (focusedCityId !== undefined) {
-      const focusedElement = cityElementsRef.current.get(focusedCityId);
-      if (focusedElement) {
-        clearHideTimer();
-        revealTooltip(focusedCityId, getTooltipCityStyle(focusedElement));
-        return;
-      }
-    }
-
-    scheduleTooltipHide();
-  }, [clearHideTimer, clearRevealTimer, getTooltipCityStyle, revealTooltip, scheduleTooltipHide]);
-
-  const handleTooltipMove = useCallback((
-    element: SVGGElement,
-    point: TooltipPoint,
-  ): void => {
-    lastAnchorRef.current = point;
-
-    if (latest.current.tooltipPosition !== "cursor") {
-      return;
-    }
-
-    const style = getTooltipCursorStyle(point);
-    if (!tooltipVisibleRef.current) {
-      setTooltipStyle((prevState) => ({ ...prevState, ...style }));
-      return;
-    }
-
-    setTooltipStyle((prevState) => ({
-      ...prevState,
-      ...style,
-      animation: undefined,
-      visibility: "visible",
-    }));
-  }, [getTooltipCursorStyle]);
-
-  const handleTooltipFocus = useCallback((
-    cityId: string,
-    element: SVGGElement,
-  ): void => {
-    focusedCityIdRef.current = cityId;
-    cityElementsRef.current.set(cityId, element);
-    if (!latest.current.showTooltip) {
-      return;
-    }
-
-    clearRevealTimer();
-    clearHideTimer();
-    revealTooltip(cityId, getTooltipCityStyle(element));
-  }, [clearHideTimer, clearRevealTimer, getTooltipCityStyle, revealTooltip]);
-
-  const handleTooltipBlur = useCallback((cityId: string): void => {
-    if (focusedCityIdRef.current === cityId) {
-      focusedCityIdRef.current = undefined;
-    }
-    if (!latest.current.showTooltip) {
-      return;
-    }
-
-    const hoveredCityId = hoveredCityIdRef.current;
-    if (hoveredCityId !== undefined) {
-      const hoveredElement = cityElementsRef.current.get(hoveredCityId);
-      const anchor = lastAnchorRef.current ?? {
-        pageX: 0,
-        pageY: 0,
-        clientX: 0,
-        clientY: 0,
-      };
-      clearHideTimer();
-      if (latest.current.tooltipPosition === "city" && hoveredElement) {
-        revealTooltip(hoveredCityId, getTooltipCityStyle(hoveredElement));
-      } else {
-        revealTooltip(hoveredCityId, getTooltipCursorStyle(anchor));
-      }
-      return;
-    }
-
-    scheduleTooltipHide();
-  }, [
-    clearHideTimer,
-    getTooltipCityStyle,
-    getTooltipCursorStyle,
-    revealTooltip,
-    scheduleTooltipHide,
-  ]);
-
-  const handleCityEnter = useCallback((
-    city: CityType,
-    element: SVGGElement,
-    point: TooltipPoint,
-  ): void => {
-    const previousCityId = hoveredCityIdRef.current;
-    if (previousCityId !== undefined && previousCityId !== city.id) {
-      hoverClearRef.current.get(previousCityId)?.();
-    }
-    hoveredCityIdRef.current = city.id;
-    handleTooltipEnter(city.id, element, point);
-  }, [handleTooltipEnter]);
-
-  const handleCityLeave = useCallback((city: CityType): void => {
-    if (hoveredCityIdRef.current === city.id) {
-      hoveredCityIdRef.current = undefined;
-    }
-    handleTooltipLeave();
-  }, [handleTooltipLeave]);
-
-  const handleCityMove = useCallback((
-    element: SVGGElement,
-    point: TooltipPoint,
-  ): void => {
-    handleTooltipMove(element, point);
-  }, [handleTooltipMove]);
-
-  const handleCityFocus = useCallback((city: CityType, element: SVGGElement): void => {
-    focusedCityIdRef.current = city.id;
-    setRovingCityId(city.id);
-
-    const isDisabled = latest.current.disabledIdSet.has(city.id)
-      || city.disabled === true
-      || (latest.current.isCityDisabled ? latest.current.isCityDisabled(city) : false);
-    let message = getCityLabel(city);
-    if (latest.current.selectedIdSet.has(city.id)) {
-      message += ", selected";
-    }
-    if (isDisabled) {
-      message += ", disabled";
-    }
-    setAnnouncement(message);
-
-    handleTooltipFocus(city.id, element);
-  }, [handleTooltipFocus]);
-
-  const handleCityBlur = useCallback((city: CityType): void => {
-    handleTooltipBlur(city.id);
-  }, [handleTooltipBlur]);
+  }), [applyViewport, cityData]);
 
   const scheduleClickSuppressionClear = useCallback((): void => {
     if (suppressClickTimerRef.current !== undefined) {
@@ -1885,262 +1314,11 @@ const CoreTurkeyMap = forwardRef<TurkeyMapRef, CoreProps>(function CoreTurkeyMap
     };
   }, [zoomable, applyViewport]);
 
-  useEffect(() => {
-    if (
-      !zoomable
-      || !tooltipVisibleRef.current
-      || latest.current.tooltipPosition !== 'city'
-    ) {
-      return;
-    }
-
-    /* istanbul ignore if */
-    if (tooltipCityId === undefined) {
-      return;
-    }
-
-    const element = cityElementsRef.current.get(tooltipCityId);
-    /* istanbul ignore if */
-    if (!element) {
-      return;
-    }
-
-    setTooltipStyle((previous) => ({
-      ...previous,
-      ...getTooltipCityStyle(element),
-    }));
-  }, [
-    zoomable,
-    effectiveViewport.scale,
-    effectiveViewport.translateX,
-    effectiveViewport.translateY,
-    tooltipCityId,
-    getTooltipCityStyle,
-  ]);
-
   useEffect(() => () => {
     if (suppressClickTimerRef.current !== undefined) {
       clearTimeout(suppressClickTimerRef.current);
     }
   }, []);
-
-  useEffect(() => {
-    if (tooltipPortal) {
-      setMounted(true);
-    }
-  }, [tooltipPortal]);
-
-  useEffect(() => {
-    if (showTooltip && visible) {
-      return;
-    }
-
-    clearRevealTimer();
-    clearHideTimer();
-    tooltipVisibleRef.current = false;
-    setTooltipVisible(false);
-    setTooltipStyle((prevState) => (
-      prevState.visibility === "hidden" && prevState.animation === undefined
-        ? prevState
-        : {
-          ...prevState,
-          visibility: "hidden",
-          animation: undefined,
-        }
-    ));
-  }, [showTooltip, visible, clearRevealTimer, clearHideTimer]);
-
-  useEffect(() => () => {
-    clearRevealTimer();
-    clearHideTimer();
-  }, [clearRevealTimer, clearHideTimer]);
-
-  const handleCityHover = useCallback((
-    event: React.MouseEvent<SVGGElement, MouseEvent>,
-    city: CityType,
-  ): void => {
-    const hoverCallback = latest.current.onHover;
-    if (hoverCallback) {
-      hoverCallback(getCityPayload(event, city));
-    }
-  }, []);
-
-  const handleCityClick = useCallback((
-    event: React.MouseEvent<SVGGElement, MouseEvent>,
-    city: CityType,
-  ): void => {
-    if (suppressClickRef.current) {
-      suppressClickRef.current = false;
-      return;
-    }
-
-    const clickCallback = latest.current.onClick;
-    if (clickCallback) {
-      clickCallback(getCityPayload(event, city));
-    }
-
-    setRovingCityId(city.id);
-
-    if (latest.current.selectionMode !== "none") {
-      latest.current.activateCity(city);
-    }
-  }, []);
-
-  const handleCityActivate = useCallback((city: CityType): void => {
-    const isDisabled = latest.current.disabledIdSet.has(city.id)
-      || city.disabled === true
-      || (latest.current.isCityDisabled ? latest.current.isCityDisabled(city) : false);
-    if (isDisabled) {
-      return;
-    }
-
-    if (latest.current.selectionMode === "none") {
-      const clickCallback = latest.current.onClick;
-      if (clickCallback) {
-        clickCallback({
-          id: city.id,
-          name: city.name,
-          plateNumber: city.plateNumber,
-          path: city.path,
-        });
-      }
-      setAnnouncement(`${getCityLabel(city)}, activated`);
-      return;
-    }
-
-    latest.current.activateCity(city);
-  }, []);
-
-  const handleCityKeyDown = useCallback((
-    event: React.KeyboardEvent<SVGGElement>,
-    city: CityType,
-  ): void => {
-    const target = event.target as Element;
-    if (target !== event.currentTarget && target.tagName !== 'path') {
-      return;
-    }
-
-    const index = latest.current.cityData.findIndex((candidate) => candidate.id === city.id);
-    /* istanbul ignore if */
-    if (index < 0) {
-      return;
-    }
-
-    switch (event.key) {
-      case "ArrowRight":
-      case "ArrowDown":
-        event.preventDefault();
-        focusCityAt(index + 1);
-        return;
-      case "ArrowLeft":
-      case "ArrowUp":
-        event.preventDefault();
-        focusCityAt(index - 1);
-        return;
-      case "Home":
-        event.preventDefault();
-        focusCityAt(0);
-        return;
-      case "End":
-        event.preventDefault();
-        focusCityAt(latest.current.cityData.length - 1);
-        return;
-      case "Enter":
-      case " ":
-        event.preventDefault();
-        handleCityActivate(city);
-        return;
-      case "Escape":
-        event.preventDefault();
-        latest.current.clearSelection();
-        return;
-      default:
-        return;
-    }
-  }, [focusCityAt, handleCityActivate]);
-
-  const handleFallbackChange = useCallback((event: React.ChangeEvent<HTMLSelectElement>): void => {
-    const requestedIds = selectionMode === "multiple"
-      ? Array.from(event.currentTarget.selectedOptions).map((option) => option.value)
-      : normalizeIds(event.currentTarget.value || null);
-    const currentIds = effectiveIds;
-    let nextIds = normalizeIds(requestedIds);
-    const rejectedCities: CityType[] = [];
-
-    if (selectionMode === "single") {
-      nextIds = nextIds.slice(0, 1);
-    }
-
-    if (
-      selectionMode === "multiple"
-      && effectiveMaxSelection !== undefined
-      && nextIds.length > effectiveMaxSelection
-    ) {
-      const keptIds = currentIds.filter((id) => nextIds.includes(id));
-      const addedIds = nextIds.filter((id) => !currentIds.includes(id));
-      const remainingSlots = Math.max(0, effectiveMaxSelection - keptIds.length);
-      const allowedAddedIds = addedIds.slice(0, remainingSlots);
-      const rejectedIds = addedIds.slice(remainingSlots);
-
-      nextIds = nextIds.filter(
-        (id) => keptIds.includes(id) || allowedAddedIds.includes(id),
-      );
-
-      rejectedIds.forEach((id) => {
-        const rejectedCity = cityById.get(id);
-        if (rejectedCity) {
-          rejectedCities.push(rejectedCity);
-        }
-      });
-    }
-
-    const addedCities = mapIdsToCities(
-      nextIds.filter((id) => !currentIds.includes(id)),
-    );
-    const selectedAfterCap = mapIdsToCities(nextIds);
-
-    rejectedCities.forEach((city) => {
-      if (onMaxSelectionReached) {
-        onMaxSelectionReached(city, selectedAfterCap, effectiveMaxSelection as number);
-      } else {
-        warnInDevelopment(
-          `turkey-map-react: maximum selection of ${effectiveMaxSelection} cities reached; "${city.name}" was not added.`,
-        );
-      }
-    });
-
-    const changed = commitSelection(nextIds, addedCities);
-
-    if (!changed) {
-      return;
-    }
-
-    if (nextIds.length === 0) {
-      setAnnouncement("No province selected");
-      return;
-    }
-
-    const addedCity = addedCities[addedCities.length - 1];
-    if (addedCity) {
-      setAnnouncement(`${getCityLabel(addedCity)}, selected`);
-      return;
-    }
-
-    const removedId = currentIds.find((id) => !nextIds.includes(id));
-    const removedCity = removedId ? cityById.get(removedId) : undefined;
-    setAnnouncement(
-      removedCity ? `${getCityLabel(removedCity)}, not selected` : "Selection updated",
-    );
-  }, [
-    selectionMode,
-    effectiveIds,
-    effectiveMaxSelection,
-    cityById,
-    mapIdsToCities,
-    onMaxSelectionReached,
-    commitSelection,
-  ]);
-
 
   const provinceElements = cityData.map((city: CityType) => {
     const isDisabled = resolveCityDisabled(city);
@@ -2150,12 +1328,14 @@ const CoreTurkeyMap = forwardRef<TurkeyMapRef, CoreProps>(function CoreTurkeyMap
         key={city.id}
         city={city}
         isSelected={isSelected}
-        isAriaSelected={selectedIdSet.has(city.id)}
         isDisabled={isDisabled}
-        isRoving={city.id === resolvedRovingId}
-        isSelectionEnabled={isSelectionEnabled}
         hoverable={hoverable}
         showTooltip={showTooltip}
+        role={isSelectionEnabled ? "option" : "button"}
+        ariaSelected={isSelectionEnabled ? selectedIdSet.has(city.id) : undefined}
+        ariaDisabled={isDisabled ? "true" : undefined}
+        tabIndex={city.id === rovingCityId ? 0 : -1}
+        dataCityId={city.id}
         resolvedStyle={resolvedStyle}
         focusStyle={focusStyle}
         choroplethActive={choroplethActive}
@@ -2164,23 +1344,21 @@ const CoreTurkeyMap = forwardRef<TurkeyMapRef, CoreProps>(function CoreTurkeyMap
         prefersReducedMotion={prefersReducedMotion}
         getCityStyle={getCityStyle}
         cityWrapper={cityWrapper}
-        onEnterCity={handleCityEnter}
-        onLeaveCity={handleCityLeave}
-        onHoverCity={handleCityHover}
-        onClickCity={handleCityClick}
-        onKeyDownCity={handleCityKeyDown}
-        onMoveCity={handleCityMove}
-        onFocusCity={handleCityFocus}
-        onBlurCity={handleCityBlur}
-        registerHoverClear={registerHoverClear}
+        onEnterCity={cityHandlers.onEnter}
+        onLeaveCity={cityHandlers.onLeave}
+        onHoverCity={cityHandlers.onHover}
+        onClickCity={handleClickCity}
+        onActivateCity={cityHandlers.onActivate}
+        onKeyDownCity={cityHandlers.onKeyDown}
+        onMoveCity={cityHandlers.onMove}
+        onFocusCity={cityHandlers.onFocus}
+        onBlurCity={cityHandlers.onBlur}
+        registerHoverClear={registerCityHoverClear}
       />
     );
   });
 
   const { top, left, width, height } = viewBox;
-  const tooltipCity = tooltipCityId === undefined
-    ? undefined
-    : cityById.get(tooltipCityId);
   const tooltipCityIsDisabled = tooltipCity !== undefined && resolveCityDisabled(tooltipCity);
   const tooltipContent = tooltipCityIsDisabled
     ? disabledTooltipText ?? tooltipText ?? tooltipCity?.name
@@ -2189,8 +1367,9 @@ const CoreTurkeyMap = forwardRef<TurkeyMapRef, CoreProps>(function CoreTurkeyMap
     ? renderTooltip(tooltipCity, getFiniteValue(values, tooltipCity.id))
     : undefined;
   const hasCustomTooltip = Boolean(renderTooltip) && tooltipCity !== undefined;
+  const tooltipProps = getTooltipProps();
   const tooltipShellStyle: React.CSSProperties = {
-    ...tooltipStyle,
+    ...tooltipProps.style,
     ...(hasCustomTooltip
       ? { width: "auto", maxWidth: 320, whiteSpace: "normal" as const }
       : undefined),
@@ -2200,7 +1379,7 @@ const CoreTurkeyMap = forwardRef<TurkeyMapRef, CoreProps>(function CoreTurkeyMap
       id={resolvedIds.tooltip}
       text={hasCustomTooltip ? undefined : tooltipContent}
       style={tooltipShellStyle}
-      visible={tooltipVisible && visible}
+      visible={tooltipVisible}
     >
       {hasCustomTooltip ? customTooltipContent : undefined}
     </Tooltip>
@@ -2233,6 +1412,11 @@ const CoreTurkeyMap = forwardRef<TurkeyMapRef, CoreProps>(function CoreTurkeyMap
       : undefined),
     ...svgPropsStyle,
   };
+  const {
+    role: containerRole,
+    "aria-label": containerAriaLabel,
+    "aria-multiselectable": containerMultiselectable,
+  } = getContainerProps();
 
   return (
     <div
@@ -2277,9 +1461,9 @@ const CoreTurkeyMap = forwardRef<TurkeyMapRef, CoreProps>(function CoreTurkeyMap
           key="turkiye"
           ref={provinceGroupRef}
           id={resolvedIds.provinceGroup}
-          role={isSelectionEnabled ? "listbox" : "group"}
-          aria-label={ariaLabel}
-          aria-multiselectable={selectionMode === "multiple" ? true : undefined}
+          role={containerRole}
+          aria-label={containerAriaLabel}
+          aria-multiselectable={containerMultiselectable}
           transform={zoomable ? getViewportTransform(effectiveViewport) : undefined}
         >
           {provinceElements}
@@ -2333,7 +1517,7 @@ const CoreTurkeyMap = forwardRef<TurkeyMapRef, CoreProps>(function CoreTurkeyMap
         <select
           aria-label={ariaLabel}
           multiple={selectionMode === "multiple"}
-          value={selectionMode === "multiple" ? effectiveIds : effectiveIds[0] ?? ""}
+          value={selectionMode === "multiple" ? selectedIds : selectedIds[0] ?? ""}
           onChange={handleFallbackChange}
           style={visuallyHiddenStyle}
         >

@@ -6,7 +6,7 @@ Keyboard navigation, ARIA semantics, live-region announcements, focus styling, a
 
 ## Keyboard and screen-reader support
 
-The map is keyboard operable and exposes selection semantics without any extra configuration.
+The map is keyboard operable and exposes selection semantics without any extra configuration. If you own the markup, [`useTurkeyMap`](./headless.md#live-region-and-focus) exposes the same roles, roving tab stop, accessible names, focus movement, and live-region text through its prop getters.
 
 The province container (`<g id="turkiye">`) is a labeled `listbox` in `"single"` and `"multiple"` modes, and a labeled `group` in `"none"` mode. `ariaLabel` overrides its accessible name; the default is `"Turkey map"`. In multiple mode the container also exposes `aria-multiselectable="true"`. Every province is named `"<name>, plate <plateNumber>"` (for example `"İstanbul, plate 34"`) and exposes `role="option"` with `aria-selected` in selection modes, or `role="button"` without `aria-selected` in `"none"` mode. Disabled provinces keep `aria-disabled="true"` and their accessible name.
 

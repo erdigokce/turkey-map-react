@@ -6,7 +6,7 @@ Single and multiple selection, controlled and uncontrolled values, selection lim
 
 ## Selection
 
-Selection is opt-in through `selectionMode` (`"none"` by default). Both controlled and uncontrolled forms are available.
+Selection is opt-in through `selectionMode` (`"none"` by default). Both controlled and uncontrolled forms are available. The same selection contract is available without the component's markup through [`useTurkeyMap`](./headless.md#selection).
 
 | Selection | Uncontrolled                | Controlled        |
 | :-------- | :-------------------------- | :---------------- |

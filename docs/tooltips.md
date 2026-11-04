@@ -8,6 +8,8 @@ Tooltip content, positioning, portals, delays, keyboard focus, and reduced motio
 
 `showTooltip` remains the opt-in switch. When it is omitted, no tooltip markup or keyframes are rendered, and every new tooltip prop is inert. With `showTooltip={true}` and no other tooltip props, the built-in text tooltip, its DOM id, fade-out animation, and positioning are unchanged.
 
+When you render your own markup, [`useTurkeyMap`](./headless.md#tooltips) exposes the same tooltip visibility, hover intent, anchoring, and reduced-motion state; you provide the content and decide whether to portal it.
+
 ### Custom content
 
 ```jsx

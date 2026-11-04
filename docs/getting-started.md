@@ -72,6 +72,8 @@ const provinceNames = cities.map((city) => city.name);
 
 Bundle-size implications: the root entry includes the built-in dataset and is roughly 91 kB gzipped. The `core` entry is roughly 10 kB gzipped and contains no province paths, so its final size depends only on the data you pass. The `data` entry carries the dataset alone (roughly 81 kB gzipped) and can be imported without pulling in the component implementation or React. Using `turkey-map-react/core` with your own data is the smallest option when you do not need the built-in map.
 
+The root and `core` entries also export the named `useTurkeyMap` hook. The hook renders nothing, requires `data`, and never imports the built-in dataset; use it when you want the interaction engine with your own markup. See [Headless hook](./headless.md) for examples and the full contract.
+
 ## Events
 
 On click example:
