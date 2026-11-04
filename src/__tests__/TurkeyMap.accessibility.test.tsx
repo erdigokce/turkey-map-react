@@ -506,6 +506,30 @@ describe('TurkeyMap accessibility focus ring', () => {
     expect(alphaGroup.style.outlineOffset).toBe('2px');
   });
 
+  it('does not show the focus ring when focus follows a pointer press', () => {
+    const { container } = render(<TurkeyMap data={testData} />);
+    const alphaGroup = getCityGroup(container, 'Alpha');
+
+    fireEvent.pointerDown(alphaGroup);
+    fireEvent.focus(alphaGroup);
+    fireEvent.pointerUp(alphaGroup);
+
+    expect(alphaGroup.style.outline).toBe('none');
+  });
+
+  it('shows the focus ring again for keyboard focus after a pointer press', () => {
+    const { container } = render(<TurkeyMap data={testData} />);
+    const alphaGroup = getCityGroup(container, 'Alpha');
+
+    fireEvent.pointerDown(alphaGroup);
+    fireEvent.focus(alphaGroup);
+    fireEvent.pointerUp(alphaGroup);
+    fireEvent.blur(alphaGroup);
+    fireEvent.focus(alphaGroup);
+
+    expect(alphaGroup.style.outline).toBe('2px solid #1a73e8');
+  });
+
   it('applies custom focus stroke values', () => {
     const { container } = render(
       <TurkeyMap

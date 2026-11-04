@@ -236,6 +236,7 @@ type ProvinceProps = {
   resolvedStyle: ResolvedStyle;
   focusStyle: React.CSSProperties;
   getCityStyle?: CityStyleGetter;
+  cityWrapper?: CityWrapper;
   onEnterCity: (city: CityType, element: SVGGElement, point: TooltipPoint) => void;
   onLeaveCity: (city: CityType) => void;
   onHoverCity: (event: React.MouseEvent<SVGGElement, MouseEvent>, city: CityType) => void;
@@ -245,9 +246,6 @@ type ProvinceProps = {
   onFocusCity: (city: CityType, element: SVGGElement) => void;
   onBlurCity: (city: CityType) => void;
   registerHoverClear: (cityId: string, clearHover: () => void) => () => void;
-} & {
-  children?: React.ReactNode;
-  [key: string]: unknown;
 };
 
 const ProvinceComponent = ({
@@ -262,6 +260,7 @@ const ProvinceComponent = ({
   resolvedStyle,
   focusStyle,
   getCityStyle,
+  cityWrapper,
   onEnterCity,
   onLeaveCity,
   onHoverCity,
@@ -271,11 +270,11 @@ const ProvinceComponent = ({
   onFocusCity,
   onBlurCity,
   registerHoverClear,
-  children: wrapperChildren,
-  ...wrapperProps
 }: ProvinceProps) => {
   const [hovered, setHovered] = useState(false);
   const [focused, setFocused] = useState(false);
+  const [focusVisible, setFocusVisible] = useState(false);
+  const focusFromPointerRef = useRef(false);
   const pointerEventsSupported = typeof window !== "undefined" && "PointerEvent" in window;
 
   const enterCity = useCallback((
@@ -364,13 +363,29 @@ const ProvinceComponent = ({
 
   const handleFocus = useCallback((event: React.FocusEvent<SVGGElement>): void => {
     setFocused(true);
+    if (focusFromPointerRef.current) {
+      focusFromPointerRef.current = false;
+      setFocusVisible(false);
+    } else {
+      setFocusVisible(true);
+    }
     onFocusCity(city, event.currentTarget);
   }, [city, onFocusCity]);
 
   const handleBlur = useCallback((): void => {
     setFocused(false);
+    setFocusVisible(false);
     onBlurCity(city);
   }, [city, onBlurCity]);
+
+  const handlePointerDown = useCallback((): void => {
+    focusFromPointerRef.current = true;
+    setFocusVisible(false);
+  }, []);
+
+  const handlePointerUp = useCallback((): void => {
+    focusFromPointerRef.current = false;
+  }, []);
 
   const handleKeyDown = useCallback((
     event: React.KeyboardEvent<SVGGElement>,
@@ -413,7 +428,8 @@ const ProvinceComponent = ({
     return mergeDefined(basePathStyle, themedStyle);
   }, [city, hovered, focused, isSelected, isDisabled, resolvedStyle, getCityStyle]);
 
-  return (
+  const pathElement = <path style={pathStyle} d={city.path} />;
+  const cityElement = (
     <g
       id={city.id}
       data-tm-city-id={city.id}
@@ -428,6 +444,10 @@ const ProvinceComponent = ({
       onPointerEnter={handlePointerEnter}
       onPointerLeave={handlePointerLeave}
       onPointerCancel={handlePointerCancel}
+      onPointerDown={handlePointerDown}
+      onPointerUp={handlePointerUp}
+      onMouseDown={handlePointerDown}
+      onMouseUp={handlePointerUp}
       onMouseOver={!isDisabled && hoverable ? handleMouseOver : undefined}
       onMouseMove={showTooltip ? handleMouseMove : undefined}
       onPointerMove={showTooltip ? handlePointerMove : undefined}
@@ -436,12 +456,19 @@ const ProvinceComponent = ({
       onKeyDown={handleKeyDown}
       onFocus={handleFocus}
       onBlur={handleBlur}
-      style={focused ? focusStyle : undefined}
-      {...(wrapperProps as React.SVGProps<SVGGElement>)}
+      style={
+        focused
+          ? focusVisible
+            ? focusStyle
+            : { outline: "none" }
+          : undefined
+      }
     >
-      {wrapperChildren !== undefined ? wrapperChildren : <path style={pathStyle} d={city.path} />}
+      {pathElement}
     </g>
   );
+
+  return cityWrapper ? cityWrapper(cityElement, city) : cityElement;
 };
 
 const Province = React.memo(ProvinceComponent);
@@ -1374,7 +1401,7 @@ const CoreTurkeyMap: React.FC<CoreProps> = ({
   const provinceElements = cityData.map((city: CityType) => {
     const isDisabled = resolveCityDisabled(city);
     const isSelected = !isDisabled && selectedIdSet.has(city.id);
-    const element = (
+    return (
       <Province
         key={city.id}
         city={city}
@@ -1388,6 +1415,7 @@ const CoreTurkeyMap: React.FC<CoreProps> = ({
         resolvedStyle={resolvedStyle}
         focusStyle={focusStyle}
         getCityStyle={getCityStyle}
+        cityWrapper={cityWrapper}
         onEnterCity={handleCityEnter}
         onLeaveCity={handleCityLeave}
         onHoverCity={handleCityHover}
@@ -1399,10 +1427,6 @@ const CoreTurkeyMap: React.FC<CoreProps> = ({
         registerHoverClear={registerHoverClear}
       />
     );
-    const wrappedElement = latest.current.cityWrapper
-      ? latest.current.cityWrapper(element, city)
-      : element;
-    return React.cloneElement(wrappedElement, { key: city.id });
   });
 
   const { top, left, width, height } = viewBox;

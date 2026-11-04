@@ -126,12 +126,17 @@ When a province has focus, ArrowRight and ArrowDown MUST move focus to the next 
 
 ### Requirement: Focus is always visible and themeable
 
-A focused province MUST render a visible focus ring in every selection mode, including `"none"`. The ring MUST default to a 2px `#1a73e8` outline with a visible offset. `customStyle.focusStroke` and `customStyle.focusStrokeWidth` MUST be optional overrides, and the ring color MUST use the `--tm-focus-ring` CSS custom property when the consumer defines it. Omitting the new fields MUST preserve the existing focus appearance. The focus ring MUST NOT change province fill, hover, selected, or disabled styling.
+A province MUST render a visible focus ring for keyboard focus in every selection mode, including `"none"`. Focus that follows a pointer press MUST NOT show the ring. The ring MUST default to a 2px `#1a73e8` outline with a visible offset. `customStyle.focusStroke` and `customStyle.focusStrokeWidth` MUST be optional overrides, and the ring color MUST use the `--tm-focus-ring` CSS custom property when the consumer defines it. Omitting the new fields MUST preserve the existing focus appearance. The focus ring MUST NOT change province fill, hover, selected, or disabled styling.
 
 #### Scenario: Default focus ring is visible
 
-- **WHEN** a province receives focus in any mode and no focus customization is supplied
+- **WHEN** a province receives keyboard focus in any mode and no focus customization is supplied
 - **THEN** it renders a visible 2px `#1a73e8` outline
+
+#### Scenario: Pointer focus does not show the ring
+
+- **WHEN** a province receives focus because it was pressed or clicked with a pointer
+- **THEN** no focus ring is rendered for that interaction
 
 #### Scenario: Custom focus stroke is applied
 

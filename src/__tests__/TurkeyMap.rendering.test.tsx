@@ -140,6 +140,33 @@ describe('TurkeyMap rendering', () => {
     expect(container.querySelector('[data-testid="wrapped-beta"]')).toBeInTheDocument();
   });
 
+  it('passes the rendered province with its path to cityWrapper so wrappers can theme it', () => {
+    const cityWrapper = (cityComponent: React.ReactElement, city: CityType) => {
+      const { children } = cityComponent.props as { children?: React.ReactNode };
+      if (!React.isValidElement(children)) {
+        return cityComponent;
+      }
+
+      return React.cloneElement(
+        cityComponent,
+        {},
+        React.cloneElement(children as React.ReactElement<{ style?: React.CSSProperties }>, {
+          style: {
+            ...(children.props as { style?: React.CSSProperties }).style,
+            fill: city.id === alpha.id ? '#ff0000' : '#00ff00',
+          },
+        }),
+      );
+    };
+
+    const { container } = render(
+      <TurkeyMap data={testData} cityWrapper={cityWrapper} />,
+    );
+
+    expect(getCityPath(getCityGroup(container, 'Alpha'))).toHaveStyle({ fill: '#ff0000' });
+    expect(getCityPath(getCityGroup(container, 'Beta'))).toHaveStyle({ fill: '#00ff00' });
+  });
+
   it('renders and remains usable inside React.StrictMode', () => {
     const { container } = render(
       <React.StrictMode>

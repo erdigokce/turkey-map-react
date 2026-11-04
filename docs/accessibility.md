@@ -30,7 +30,7 @@ A visually hidden polite live region announces the focused province, including s
 
 ## Focus ring
 
-The focus ring is visible in every mode, including `"none"`. It defaults to a 2px `#1a73e8` outline and can be customized through `customStyle.focusStroke` and `customStyle.focusStrokeWidth`. The outline color also reads the `--tm-focus-ring` CSS custom property when defined.
+The focus ring is shown for keyboard focus in every mode, including `"none"`. Clicking or tapping a province with a pointer does not show the ring. It defaults to a 2px `#1a73e8` outline and can be customized through `customStyle.focusStroke` and `customStyle.focusStrokeWidth`. The outline color also reads the `--tm-focus-ring` CSS custom property when defined.
 
 ## Native select fallback
 
