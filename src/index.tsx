@@ -3,6 +3,8 @@ import CoreTurkeyMap from './core';
 import { cities } from './data';
 import type { Data, TurkeyMapProps, TurkeyMapRef } from './types';
 
+export { default as useTurkeyMap } from './useTurkeyMap';
+
 export type {
   ChoroplethValues,
   CityInteractionState,
@@ -26,6 +28,13 @@ export type {
   TooltipPosition,
   TurkeyMapProps,
   TurkeyMapRef,
+  UseTurkeyMapCityProps,
+  UseTurkeyMapContainerProps,
+  UseTurkeyMapHandlers,
+  UseTurkeyMapOptions,
+  UseTurkeyMapPoint,
+  UseTurkeyMapResult,
+  UseTurkeyMapTooltipProps,
   ViewBoxType,
   Viewport,
 } from './types';

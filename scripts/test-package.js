@@ -20,6 +20,8 @@ const requiredFiles = [
   'lib/index.d.ts',
   'lib/core.js',
   'lib/core.d.ts',
+  'lib/useTurkeyMap.js',
+  'lib/useTurkeyMap.d.ts',
   'lib/Tooltip.js',
   'lib/Tooltip.d.ts',
   'lib/data/index.js',
@@ -59,11 +61,50 @@ const pkg = require('turkey-map-react');
 const TurkeyMap = pkg.default || pkg;
 const corePkg = require('turkey-map-react/core');
 const CoreTurkeyMap = corePkg.default || corePkg;
+const useTurkeyMap = pkg.useTurkeyMap;
+const coreUseTurkeyMap = corePkg.useTurkeyMap;
 const { cities } = require('turkey-map-react/data');
 
 assert.ok(['function', 'object'].includes(typeof TurkeyMap));
 assert.ok(['function', 'object'].includes(typeof CoreTurkeyMap));
+assert.equal(typeof useTurkeyMap, 'function');
+assert.equal(typeof coreUseTurkeyMap, 'function');
 assert.equal(cities.length, 81);
+
+const Headless = ({ data, hook }) => {
+  const { getContainerProps, getCityProps, selectedCities } = hook({
+    data,
+    selectionMode: 'multiple',
+  });
+
+  return React.createElement(
+    'div',
+    null,
+    React.createElement(
+      'div',
+      getContainerProps(),
+      data.cities.map((city) => React.createElement(
+        'div',
+        { key: city.id, ...getCityProps(city) },
+        city.name,
+      )),
+    ),
+    React.createElement('span', null, selectedCities.map((city) => city.id).join(',')),
+  );
+};
+
+const headlessData = {
+  cities: [{ id: 'alpha', plateNumber: 1, name: 'Alpha', path: 'M 0 0 L 10 10 Z' }],
+};
+const rootHeadlessHtml = renderToStaticMarkup(
+  React.createElement(Headless, { data: headlessData, hook: useTurkeyMap }),
+);
+assert.match(rootHeadlessHtml, /role="listbox"/);
+assert.match(rootHeadlessHtml, /data-tm-city-id="alpha"/);
+const coreHeadlessHtml = renderToStaticMarkup(
+  React.createElement(Headless, { data: headlessData, hook: coreUseTurkeyMap }),
+);
+assert.match(coreHeadlessHtml, /aria-label="Alpha, plate 1"/);
 
 const html = renderToStaticMarkup(React.createElement(TurkeyMap));
 assert.match(html, /id="svg-turkiye-haritasi"/);
@@ -110,9 +151,48 @@ import { cities } from 'turkey-map-react/data';
 
 const TurkeyMap = pkg.default || pkg;
 const CoreTurkeyMap = corePkg.default || corePkg;
+const useTurkeyMap = pkg.useTurkeyMap;
+const coreUseTurkeyMap = corePkg.useTurkeyMap;
 assert.ok(['function', 'object'].includes(typeof TurkeyMap));
 assert.ok(['function', 'object'].includes(typeof CoreTurkeyMap));
+assert.equal(typeof useTurkeyMap, 'function');
+assert.equal(typeof coreUseTurkeyMap, 'function');
 assert.equal(cities.length, 81);
+
+const Headless = ({ data, hook }) => {
+  const { getContainerProps, getCityProps, selectedCities } = hook({
+    data,
+    selectionMode: 'single',
+  });
+
+  return React.createElement(
+    'div',
+    null,
+    React.createElement(
+      'div',
+      getContainerProps(),
+      data.cities.map((city) => React.createElement(
+        'div',
+        { key: city.id, ...getCityProps(city) },
+        city.name,
+      )),
+    ),
+    React.createElement('span', null, selectedCities.map((city) => city.id).join(',')),
+  );
+};
+
+const headlessData = {
+  cities: [{ id: 'alpha', plateNumber: 1, name: 'Alpha', path: 'M 0 0 L 10 10 Z' }],
+};
+const headlessHtml = renderToStaticMarkup(
+  React.createElement(Headless, { data: headlessData, hook: useTurkeyMap }),
+);
+assert.match(headlessHtml, /role="listbox"/);
+assert.match(headlessHtml, /data-tm-city-id="alpha"/);
+const coreHeadlessHtml = renderToStaticMarkup(
+  React.createElement(Headless, { data: headlessData, hook: coreUseTurkeyMap }),
+);
+assert.match(coreHeadlessHtml, /aria-label="Alpha, plate 1"/);
 
 const html = renderToStaticMarkup(React.createElement(TurkeyMap));
 assert.match(html, /id="svg-turkiye-haritasi"/);

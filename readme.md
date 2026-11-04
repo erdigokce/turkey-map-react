@@ -73,6 +73,54 @@ ref.current?.resetView();
 
 The viewport can be controlled with `viewport` and `onViewportChange`. See [Zoom and pan][zoom-pan] for gestures, keyboard shortcuts, bounds, and the full ref API.
 
+## Headless hook
+
+Use `useTurkeyMap` when you want the interaction engine without the component's markup. The hook renders nothing, requires `data`, and returns selection state, handlers, ARIA props, roving focus, announcements, and tooltip state:
+
+```jsx
+import { useTurkeyMap } from 'turkey-map-react';
+import { cities } from 'turkey-map-react/data';
+
+function HeadlessMap() {
+  const {
+    getContainerProps,
+    getCityProps,
+    getTooltipProps,
+    selectedCities,
+    tooltipCity,
+    announcement,
+  } = useTurkeyMap({
+    data: { cities },
+    selectionMode: 'multiple',
+    showTooltip: true,
+  });
+
+  return (
+    <div>
+      <svg {...getContainerProps()}>
+        {cities.map((city) => (
+          <path
+            key={city.id}
+            d={city.path}
+            {...getCityProps(city)}
+            style={{
+              fill: selectedCities.some((item) => item.id === city.id) ? '#dc3522' : '#444',
+              cursor: 'pointer',
+            }}
+          />
+        ))}
+      </svg>
+      {tooltipCity && <div {...getTooltipProps()}>{tooltipCity.name}</div>}
+      <div role="status" aria-live="polite" aria-atomic="true" style={{ position: 'absolute', width: 1, height: 1, overflow: 'hidden' }}>
+        {announcement}
+      </div>
+    </div>
+  );
+}
+```
+
+The hook is exported from both `turkey-map-react` and `turkey-map-react/core`, supports custom city metadata generics, and works with SVG or non-SVG renderers. See [Headless hook][headless] for recipes, generics, tooltips, the live region, a native-select fallback, memoization, and SSR.
+
 ## Entry points
 
 | Entry point             | What it provides                                                       | Use it when                                                          |
@@ -81,7 +129,7 @@ The viewport can be controlled with `viewport` and `onViewportChange`. See [Zoom
 | `turkey-map-react/core` | The same component without the built-in dataset. `data` is required.   | You supply your own `data` and want the dataset out of your bundle.  |
 | `turkey-map-react/data` | The built-in dataset as a named `cities` export.                       | You want to read, filter, or extend the built-in provinces yourself. |
 
-The root entry is roughly 91 kB gzipped, `core` is roughly 10 kB gzipped before your data, and `data` is roughly 81 kB gzipped. See [entry points and bundle size][entry-points] for examples and guidance.
+The root and `core` entries also export the named `useTurkeyMap` hook. The hook never imports the built-in dataset and requires `data`, so `turkey-map-react/core` is the smallest choice for a headless map with custom data. The root entry is roughly 91 kB gzipped, `core` is roughly 10 kB gzipped before your data, and `data` is roughly 81 kB gzipped. See [entry points and bundle size][entry-points] for examples and guidance.
 
 ## Documentation
 
@@ -90,6 +138,7 @@ Detailed guides live in [`docs/`](https://github.com/erdigokce/turkey-map-react/
 | Guide                                                | What it covers                                                                                          |
 | :--------------------------------------------------- | :------------------------------------------------------------------------------------------------------ |
 | [Getting started][getting-started]                   | Installation, requirements, quick start, events, entry points, and bundle size.                         |
+| [Headless hook][headless]                            | `useTurkeyMap` state, prop getters, custom metadata, non-SVG renderers, tooltips, and SSR.               |
 | [Selection and forms][selection]                     | Single and multiple selection, controlled and uncontrolled values, limits, and form integration.         |
 | [Custom data and cities][custom-data]                | Custom datasets, disabled provinces, and city wrapping.                                                 |
 | [Choropleth values][choropleth]                      | Numeric values, linear/quantize/quantile/threshold scales, no-data styling, and transitions.            |
@@ -114,6 +163,7 @@ Derived from **dnomak**'s [svg-turkiye-haritasi][dnomak-link] project.
 
 [getting-started]: https://github.com/erdigokce/turkey-map-react/blob/master/docs/getting-started.md
 [entry-points]: https://github.com/erdigokce/turkey-map-react/blob/master/docs/getting-started.md#entry-points-and-bundle-size
+[headless]: https://github.com/erdigokce/turkey-map-react/blob/master/docs/headless.md
 [selection]: https://github.com/erdigokce/turkey-map-react/blob/master/docs/selection.md
 [custom-data]: https://github.com/erdigokce/turkey-map-react/blob/master/docs/custom-data.md
 [choropleth]: https://github.com/erdigokce/turkey-map-react/blob/master/docs/choropleth.md

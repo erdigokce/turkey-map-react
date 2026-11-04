@@ -10,7 +10,7 @@ Provide your own SVG paths and metadata, disable individual provinces, and wrap 
 <TurkeyMap data={{ cities: this.state.apiData }} />
 ```
 
-If custom SVG paths and/or city metadata need to be rendered, they can be provided through the `data` prop.
+If custom SVG paths and/or city metadata need to be rendered, they can be provided through the `data` prop. For full control over the rendered elements, [`useTurkeyMap`](./headless.md#custom-city-metadata) accepts a generic city subtype so metadata survives selection state, getters, and callbacks.
 
 The `data` prop has the following type:
 
