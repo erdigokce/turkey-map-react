@@ -55,6 +55,7 @@ import type {
 export { default as useTurkeyMap } from './useTurkeyMap';
 
 export type {
+  Centroid,
   ChoroplethValues,
   CityInteractionState,
   CityStyleGetter,
@@ -70,6 +71,7 @@ export type {
   OnSelectCallback,
   OnSelectionChangeCallback,
   OnViewportChangeCallback,
+  Region,
   RenderTooltipCallback,
   ScaleType,
   SelectionMode,
@@ -88,7 +90,14 @@ export type {
   Viewport,
 } from './types';
 
-export type CoreProps = Omit<TurkeyMapProps, 'data'> & { data: Data };
+export type CoreProps<TCity extends CityType = CityType> = Omit<TurkeyMapProps<TCity>, 'data'> & { data: Data<TCity> };
+
+type CoreTurkeyMapComponent = {
+  <TCity extends CityType = CityType>(
+    props: CoreProps<TCity> & { ref?: React.Ref<TurkeyMapRef> },
+  ): React.ReactElement;
+  displayName?: string;
+};
 
 type ResolvedStyle = {
   idleColor: string;
@@ -231,8 +240,8 @@ const getCityPayloadFromEvent = (
   };
 };
 
-type ProvinceProps = {
-  city: CityType;
+type ProvinceProps<TCity extends CityType = CityType> = {
+  city: TCity;
   isSelected: boolean;
   isDisabled: boolean;
   hoverable: boolean;
@@ -248,21 +257,24 @@ type ProvinceProps = {
   choroplethColor: string;
   animateValues: boolean;
   prefersReducedMotion: boolean;
-  getCityStyle?: CityStyleGetter;
-  cityWrapper?: CityWrapper;
-  onEnterCity: (city: CityType, element: Element, point: UseTurkeyMapPoint) => void;
-  onLeaveCity: (city: CityType) => void;
-  onHoverCity: (city: CityType, event: React.MouseEvent<Element, MouseEvent>) => void;
-  onClickCity: (city: CityType, event: React.MouseEvent<Element, MouseEvent>) => void;
-  onActivateCity: (city: CityType, event?: React.MouseEvent<Element, MouseEvent>) => void;
-  onKeyDownCity: (city: CityType, event: React.KeyboardEvent<Element>) => void;
-  onMoveCity: (city: CityType, element: Element, point: UseTurkeyMapPoint) => void;
-  onFocusCity: (city: CityType, element: Element) => void;
-  onBlurCity: (city: CityType) => void;
+  getCityStyle?: CityStyleGetter<TCity>;
+  cityWrapper?: CityWrapper<TCity>;
+  onEnterCity: (city: TCity, element: Element, point: UseTurkeyMapPoint) => void;
+  onLeaveCity: (city: TCity) => void;
+  onHoverCity: (city: TCity, event: React.MouseEvent<Element, MouseEvent>) => void;
+  onClickCity: (city: TCity, event: React.MouseEvent<Element, MouseEvent>) => void;
+  onActivateCity: (city: TCity, event?: React.MouseEvent<Element, MouseEvent>) => void;
+  onKeyDownCity: (city: TCity, event: React.KeyboardEvent<Element>) => void;
+  onMoveCity: (city: TCity, element: Element, point: UseTurkeyMapPoint) => void;
+  onFocusCity: (city: TCity, element: Element) => void;
+  onBlurCity: (city: TCity) => void;
   registerHoverClear: (cityId: string, clearHover: () => void) => () => void;
+} & {
+  children?: React.ReactNode;
+  [key: string]: unknown;
 };
 
-const ProvinceComponent = ({
+const ProvinceComponent = <TCity extends CityType = CityType>({
   city,
   isSelected,
   isDisabled,
@@ -291,7 +303,9 @@ const ProvinceComponent = ({
   onFocusCity,
   onBlurCity,
   registerHoverClear,
-}: ProvinceProps) => {
+  children: wrapperChildren,
+  ...wrapperProps
+}: ProvinceProps<TCity>) => {
   const [hovered, setHovered] = useState(false);
   const [focused, setFocused] = useState(false);
   const [focusVisible, setFocusVisible] = useState(false);
@@ -529,15 +543,16 @@ const ProvinceComponent = ({
             : { outline: "none" }
           : undefined
       }
+      {...(wrapperProps as React.SVGProps<SVGGElement>)}
     >
-      {pathElement}
+      {wrapperChildren !== undefined ? wrapperChildren : pathElement}
     </g>
   );
 
   return cityWrapper ? cityWrapper(cityElement, city) : cityElement;
 };
 
-const Province = React.memo(ProvinceComponent);
+const Province = React.memo(ProvinceComponent) as unknown as typeof ProvinceComponent;
 
 const CoreTurkeyMap = forwardRef<TurkeyMapRef, CoreProps>(function CoreTurkeyMap({
   viewBox = { top: 0, left: 80, width: 1050, height: 585 },
@@ -783,7 +798,7 @@ const CoreTurkeyMap = forwardRef<TurkeyMapRef, CoreProps>(function CoreTurkeyMap
     if (!onHover) {
       return;
     }
-    onHover(cityWrapper ? getCityPayloadFromEvent(event) : city);
+    onHover(cityWrapper ? { ...city, ...getCityPayloadFromEvent(event) } : city);
   }, [onHover, cityWrapper]);
 
   const handleClickCallback = useCallback((
@@ -793,7 +808,7 @@ const CoreTurkeyMap = forwardRef<TurkeyMapRef, CoreProps>(function CoreTurkeyMap
     if (!onClick) {
       return;
     }
-    onClick(cityWrapper && event ? getCityPayloadFromEvent(event) : city);
+    onClick(cityWrapper && event ? { ...city, ...getCityPayloadFromEvent(event) } : city);
   }, [onClick, cityWrapper]);
 
   const hookOptions: UseTurkeyMapOptions = {
@@ -1547,7 +1562,7 @@ const CoreTurkeyMap = forwardRef<TurkeyMapRef, CoreProps>(function CoreTurkeyMap
       </style>}
     </div>
   );
-});
+}) as unknown as CoreTurkeyMapComponent;
 
 CoreTurkeyMap.displayName = 'CoreTurkeyMap';
 

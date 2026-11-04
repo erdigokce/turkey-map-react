@@ -15,6 +15,7 @@ const {
 const consumerSource = `
 import React from 'react';
 import TurkeyMap, {
+  Centroid,
   ChoroplethValues,
   CityInteractionState,
   CityStyleGetter,
@@ -29,6 +30,7 @@ import TurkeyMap, {
   OnSelectCallback,
   OnSelectionChangeCallback,
   OnViewportChangeCallback,
+  Region,
   RenderTooltipCallback,
   ScaleType,
   SelectionMode,
@@ -47,7 +49,9 @@ import TurkeyMap, {
   useTurkeyMap,
 } from 'turkey-map-react';
 import CoreTurkeyMap, {
+  Centroid as CoreCentroid,
   CityType as CoreCityType,
+  Region as CoreRegion,
   TurkeyMapRef as CoreTurkeyMapRef,
   useTurkeyMap as coreUseTurkeyMap,
 } from 'turkey-map-react/core';
@@ -124,6 +128,27 @@ const viewBox: ViewBoxType = {
 
 const data: { cities: CityType[] } = { cities: [city, disabledCity] };
 
+const region: Region = 'ege';
+const centroid: Centroid = { x: 1, y: 2 };
+const coreRegion: CoreRegion = region;
+const coreCentroid: CoreCentroid = centroid;
+const datasetRegion: Region | undefined = cities[0].region;
+const datasetCentroid: Centroid | undefined = cities[0].centroid;
+const datasetNeighbors: string[] | undefined = cities[0].neighbors;
+const datasetArea: number | undefined = cities[0].areaKm2;
+const datasetPopulation: number | undefined = cities[0].population;
+const datasetIso: string | undefined = cities[0].isoCode;
+const datasetNuts: string | undefined = cities[0].nutsCode;
+const datasetAltNames: string[] | undefined = cities[0].altNames;
+const datasetMeta: Record<string, unknown> | undefined = cities[0].meta;
+
+// @ts-expect-error unknown region value
+const invalidRegion: CityType = { ...city, region: 'aegean' };
+
+type SalesCity = Omit<CityType, 'meta'> & { meta: { sales: number } };
+const salesCity: SalesCity = { ...city, meta: { sales: 42 } };
+const salesData: Data<SalesCity> = { cities: [salesCity] };
+
 const selectionMode: SelectionMode = 'multiple';
 const singleValue: SelectionValue = city.id;
 const multipleValue: SelectionValue = [city.id];
@@ -167,6 +192,29 @@ const onViewportChange: OnViewportChangeCallback = (nextViewport) => (
 );
 const mapRef = React.createRef<TurkeyMapRef>();
 const coreMapRef = React.createRef<CoreTurkeyMapRef>();
+
+const RichApp = () => (
+  <TurkeyMap<SalesCity>
+    data={salesData}
+    selectionMode="multiple"
+    onHover={(hovered) => hovered.meta.sales.toFixed(0)}
+    onClick={(clicked) => clicked.meta.sales.toFixed(0)}
+    onSelect={(selected) => selected.meta.sales.toFixed(0)}
+    onSelectionChange={(selected) => selected.map((item) => item.meta.sales.toFixed(0)).join(',')}
+    onMaxSelectionReached={(attempted) => attempted.meta.sales.toFixed(0)}
+    getCityStyle={(styled) => ({ opacity: styled.meta.sales > 0 ? 1 : 0.5 })}
+    isCityDisabled={(candidate) => candidate.meta.sales < 0}
+    renderTooltip={(tooltipCity) => tooltipCity.meta.sales.toFixed(0)}
+    cityWrapper={(element, wrapped) => <g data-sales={wrapped.meta.sales}>{element}</g>}
+  />
+);
+
+const RichCoreApp = () => (
+  <CoreTurkeyMap<SalesCity>
+    data={salesData}
+    onHover={(hovered) => hovered.meta.sales.toFixed(0)}
+  />
+);
 
 const App = () => (
   <TurkeyMap
@@ -340,32 +388,32 @@ const RefApi = () => {
   );
 };
 
-type RegionCity = CityType & { region: string };
+type ZoneCity = CityType & { zone: string };
 
-const regionCity: RegionCity = {
+const zoneCity: ZoneCity = {
   ...city,
-  region: 'Marmara',
+  zone: 'Marmara',
 };
-const regionData: Data<RegionCity> = { cities: [regionCity] };
+const zoneData: Data<ZoneCity> = { cities: [zoneCity] };
 const defaultHookOptions: UseTurkeyMapOptions = { data: { cities: [city] } };
 
 const HeadlessApp = () => {
-  const result: UseTurkeyMapResult<RegionCity> = useTurkeyMap<RegionCity>({
-    data: regionData,
+  const result: UseTurkeyMapResult<ZoneCity> = useTurkeyMap<ZoneCity>({
+    data: zoneData,
     selectionMode: 'multiple',
-    selectedCities: [regionCity.id],
-    defaultSelectedCities: [regionCity.id],
+    selectedCities: [zoneCity.id],
+    defaultSelectedCities: [zoneCity.id],
     maxSelection: 2,
-    onSelect: (selectedCity) => console.log(selectedCity.region),
+    onSelect: (selectedCity) => console.log(selectedCity.zone),
     onSelectionChange: (selectedCities) => (
-      console.log(selectedCities.map((selectedCity) => selectedCity.region))
+      console.log(selectedCities.map((selectedCity) => selectedCity.zone))
     ),
     onMaxSelectionReached: (attemptedCity, selectedCities, maxSelection) => (
-      console.log(attemptedCity.region, selectedCities.length, maxSelection)
+      console.log(attemptedCity.zone, selectedCities.length, maxSelection)
     ),
-    onHover: (hoveredCity) => console.log(hoveredCity.region),
-    onClick: (clickedCity) => console.log(clickedCity.region),
-    isCityDisabled: (candidate) => candidate.region === 'blocked',
+    onHover: (hoveredCity) => console.log(hoveredCity.zone),
+    onClick: (clickedCity) => console.log(clickedCity.zone),
+    isCityDisabled: (candidate) => candidate.zone === 'blocked',
     disabledCities: [],
     showTooltip: true,
     tooltipPosition: 'city',
@@ -378,34 +426,34 @@ const HeadlessApp = () => {
   });
 
   const containerProps: UseTurkeyMapContainerProps = result.getContainerProps();
-  const cityProps: UseTurkeyMapCityProps = result.getCityProps(regionCity);
+  const cityProps: UseTurkeyMapCityProps = result.getCityProps(zoneCity);
   const tooltipProps: UseTurkeyMapTooltipProps = result.getTooltipProps();
-  const handlers: UseTurkeyMapHandlers<RegionCity> = result.cityHandlers;
+  const handlers: UseTurkeyMapHandlers<ZoneCity> = result.cityHandlers;
   const point: UseTurkeyMapPoint = { pageX: 1, pageY: 2, clientX: 3, clientY: 4 };
   const element = document.body;
-  handlers.onEnter(regionCity, element, point);
-  handlers.onLeave(regionCity);
-  handlers.onMove(regionCity, element, point);
-  handlers.onHover(regionCity, {} as React.MouseEvent<Element>);
-  handlers.onClick(regionCity, {} as React.MouseEvent<Element>);
-  handlers.onActivate(regionCity);
-  handlers.onKeyDown(regionCity, {} as React.KeyboardEvent<Element>);
-  handlers.onFocus(regionCity, element);
-  handlers.onBlur(regionCity);
-  result.activateCity(regionCity);
-  result.changeSelection([regionCity.id]);
+  handlers.onEnter(zoneCity, element, point);
+  handlers.onLeave(zoneCity);
+  handlers.onMove(zoneCity, element, point);
+  handlers.onHover(zoneCity, {} as React.MouseEvent<Element>);
+  handlers.onClick(zoneCity, {} as React.MouseEvent<Element>);
+  handlers.onActivate(zoneCity);
+  handlers.onKeyDown(zoneCity, {} as React.KeyboardEvent<Element>);
+  handlers.onFocus(zoneCity, element);
+  handlers.onBlur(zoneCity);
+  result.activateCity(zoneCity);
+  result.changeSelection([zoneCity.id]);
   result.clearSelection();
 
   return (
     <div {...containerProps}>
-      <div {...cityProps}>{result.selectedCities[0]?.region}</div>
+      <div {...cityProps}>{result.selectedCities[0]?.zone}</div>
       <div {...tooltipProps}>{result.announcement}</div>
-      <span>{result.isCityDisabled(regionCity) ? 'disabled' : 'enabled'}</span>
-      <span>{result.tooltipCity?.region ?? result.rovingCityId ?? ''}</span>
+      <span>{result.isCityDisabled(zoneCity) ? 'disabled' : 'enabled'}</span>
+      <span>{result.tooltipCity?.zone ?? result.rovingCityId ?? ''}</span>
       <span>{result.focusedCityId ?? ''}</span>
       <span>{String(result.tooltipVisible)}</span>
       <span>{result.cityHandlers === handlers ? 'same' : 'other'}</span>
-      <span>{result.registerCityHoverClear(regionCity.id, () => {}) ? 'clear' : 'no clear'}</span>
+      <span>{result.registerCityHoverClear(zoneCity.id, () => {}) ? 'clear' : 'no clear'}</span>
     </div>
   );
 };
@@ -416,7 +464,7 @@ const DefaultHookApp = () => {
 };
 
 const CoreHookApp = () => {
-  const result = coreUseTurkeyMap({ data: regionData });
+  const result = coreUseTurkeyMap({ data: zoneData });
   return <span>{result.selectedIds.join(',')}</span>;
 };
 
@@ -439,6 +487,8 @@ export {
   HeadlessApp,
   MissingDataHook,
   RefApi,
+  RichApp,
+  RichCoreApp,
   SingleArgumentTooltip,
   ThresholdScale,
   UncontrolledMultiple,
