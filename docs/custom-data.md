@@ -41,6 +41,8 @@ where each city is:
 
 Every new field is optional, so existing custom datasets keep working unchanged.
 
+If your source is GeoJSON rather than pre-baked SVG paths, [`geoJsonToCities`](./geojson.md) converts Polygon and MultiPolygon features into this shape, including holes and custom key mappings.
+
 ## Built-in geography data
 
 The built-in 81-province dataset populates the optional geography fields so labels, regions, and markers can use them without re-encoding data. Custom datasets may provide any subset.
@@ -146,6 +148,7 @@ This is generally used for [Antd](https://ant.design/components/tooltip/) style 
 
 ## Related
 
+- [GeoJSON conversion](./geojson.md) — turn Polygon/MultiPolygon features into `CityType[]` for `data`.
 - [Styling and DOM ids](./styling.md) — colors for idle, hovered, selected, and disabled provinces.
 - [Accessibility](./accessibility.md) — how disabled provinces participate in keyboard navigation.
 - [API reference: data and interaction props](./api.md#data-and-interaction) — `data`, `disabledCities`, `isCityDisabled`, and `cityWrapper`.

@@ -26,6 +26,8 @@ const requiredFiles = [
   'lib/Tooltip.d.ts',
   'lib/data/index.js',
   'lib/data/index.d.ts',
+  'lib/geojson.js',
+  'lib/geojson.d.ts',
 ];
 
 const forbiddenPrefixes = [
@@ -64,6 +66,7 @@ const CoreTurkeyMap = corePkg.default || corePkg;
 const useTurkeyMap = pkg.useTurkeyMap;
 const coreUseTurkeyMap = corePkg.useTurkeyMap;
 const { cities } = require('turkey-map-react/data');
+const { geoJsonToCities } = require('turkey-map-react/geojson');
 
 assert.ok(['function', 'object'].includes(typeof TurkeyMap));
 assert.ok(['function', 'object'].includes(typeof CoreTurkeyMap));
@@ -138,6 +141,19 @@ const styled = renderToStaticMarkup(
 );
 assert.match(styled, /#123456/);
 
+const geoCities = geoJsonToCities({
+  type: 'Feature',
+  properties: { id: 'geo', name: 'Geo', plateNumber: 7 },
+  geometry: {
+    type: 'Polygon',
+    coordinates: [[[0, 0], [1, 0], [1, 1], [0, 0]]],
+  },
+});
+assert.equal(geoCities.length, 1);
+assert.equal(geoCities[0].id, 'geo');
+assert.equal(geoCities[0].plateNumber, 7);
+assert.match(geoCities[0].path, /^M /);
+
 console.log('CJS package smoke passed.');
 `;
 
@@ -148,6 +164,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import pkg from 'turkey-map-react';
 import corePkg from 'turkey-map-react/core';
 import { cities } from 'turkey-map-react/data';
+import { geoJsonToCities } from 'turkey-map-react/geojson';
 
 const TurkeyMap = pkg.default || pkg;
 const CoreTurkeyMap = corePkg.default || corePkg;
@@ -205,6 +222,18 @@ const coreHtml = renderToStaticMarkup(
 );
 assert.match(coreHtml, /data-iladi="Alpha"/);
 assert.equal((coreHtml.match(/data-iladi=/g) || []).length, 1);
+
+const geoCities = geoJsonToCities({
+  type: 'Feature',
+  properties: { id: 'geo', name: 'Geo', plateNumber: 7 },
+  geometry: {
+    type: 'Polygon',
+    coordinates: [[[0, 0], [1, 0], [1, 1], [0, 0]]],
+  },
+});
+assert.equal(geoCities.length, 1);
+assert.equal(geoCities[0].id, 'geo');
+assert.match(geoCities[0].path, /^M /);
 
 console.log('ESM package smoke passed.');
 `;

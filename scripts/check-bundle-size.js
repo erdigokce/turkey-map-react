@@ -6,7 +6,8 @@ const path = require('node:path');
 const zlib = require('node:zlib');
 
 // The data-free core entry has a hard product budget. The root entry includes
-// the built-in dataset, so it is only guarded against regressions.
+// the built-in dataset, so it is only guarded against regressions. The optional
+// geojson helper is a separate entry and has its own small budget.
 const CORE_BUDGET = 15 * 1024;
 // The root entry is dominated by the built-in 81-province dataset. Re-measured
 // after the rich geography data: 97,952 bytes gzipped. The extra headroom
@@ -19,6 +20,7 @@ const root = path.resolve(__dirname, '..');
 const entries = [
   { label: 'core', file: 'lib/core.js', budget: CORE_BUDGET },
   { label: 'root', file: 'lib/index.js', budget: ROOT_BUDGET },
+  { label: 'geojson', file: 'lib/geojson.js', budget: 5 * 1024 },
 ];
 
 const formatSize = (bytes) => `${(bytes / 1024).toFixed(2)} KiB (${bytes} bytes)`;
