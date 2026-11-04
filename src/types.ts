@@ -13,7 +13,7 @@ import type {
 } from 'react';
 import type { CityType } from './city-type';
 
-export type { CityType } from './city-type';
+export type { Centroid, CityType, Region } from './city-type';
 
 export type Data<TCity extends CityType = CityType> = {
   cities: TCity[];

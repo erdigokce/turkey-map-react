@@ -40,6 +40,18 @@ export default function App() {
 
 The root entry includes the built-in 81-province dataset. See [Getting started][getting-started] for events, custom data, and all entry points.
 
+## Rich geography data
+
+The built-in dataset carries optional `region`, `centroid`, `neighbors`, `areaKm2`, `population`, `isoCode`, `nutsCode`, and `altNames` fields, plus a consumer-owned `meta` record. The component, core entry, and hook are generic over a city subtype, so typed metadata flows through data and callbacks:
+
+```tsx
+type SalesCity = Omit<CityType, "meta"> & { meta: { sales: number } };
+
+<TurkeyMap<SalesCity> data={salesData} onHover={(city) => city.meta.sales} />
+```
+
+See [custom data][custom-data] for field meanings, units, centroid coordinates, and data sources.
+
 ## Choropleth
 
 Color provinces by any metric with `values`, keyed by city id:
@@ -129,7 +141,7 @@ The hook is exported from both `turkey-map-react` and `turkey-map-react/core`, s
 | `turkey-map-react/core` | The same component without the built-in dataset. `data` is required.   | You supply your own `data` and want the dataset out of your bundle.  |
 | `turkey-map-react/data` | The built-in dataset as a named `cities` export.                       | You want to read, filter, or extend the built-in provinces yourself. |
 
-The root and `core` entries also export the named `useTurkeyMap` hook. The hook never imports the built-in dataset and requires `data`, so `turkey-map-react/core` is the smallest choice for a headless map with custom data. The root entry is roughly 91 kB gzipped, `core` is roughly 10 kB gzipped before your data, and `data` is roughly 81 kB gzipped. See [entry points and bundle size][entry-points] for examples and guidance.
+The root and `core` entries also export the named `useTurkeyMap` hook. The hook never imports the built-in dataset and requires `data`, so `turkey-map-react/core` is the smallest choice for a headless map with custom data. The root entry is roughly 96 kB gzipped, `core` is roughly 11 kB gzipped before your data, and `data` is roughly 81 kB gzipped. See [entry points and bundle size][entry-points] for examples and guidance.
 
 ## Documentation
 

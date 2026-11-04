@@ -161,11 +161,42 @@ const result = useTurkeyMap<RegionCity>({ data, selectionMode: 'multiple' });
 
 `cityHandlers` is stable and uses the same city argument ordering as the component's internals: `onEnter(city, element, point)`, `onLeave(city)`, `onMove(city, element, point)`, `onHover(city, event)`, `onClick(city, event)`, `onActivate(city, event?)`, `onKeyDown(city, event)`, `onFocus(city, element)`, and `onBlur(city)`.
 
+## Generic city types
+
+`TurkeyMap`, `CoreTurkeyMap`, `TurkeyMapProps`, `CoreProps`, `Data`, and the callback/helper types are generic over a city subtype that extends `CityType`. The default is `CityType`, so existing untyped usage is unchanged. Use `Omit<CityType, "meta">` to replace the wide metadata record with your own shape:
+
+```tsx
+import TurkeyMap, { CityType, Data } from "turkey-map-react";
+
+type SalesCity = Omit<CityType, "meta"> & { meta: { sales: number } };
+
+const salesData: Data<SalesCity> = {
+  cities: [
+    {
+      id: "ankara",
+      plateNumber: 6,
+      name: "Ankara",
+      path: "M 0 0 L 10 10 L 0 10 Z",
+      meta: { sales: 1200 },
+    },
+  ],
+};
+
+<TurkeyMap<SalesCity>
+  data={salesData}
+  onHover={(city) => console.log(city.meta.sales)}
+/>;
+```
+
+The same generic works with `CoreTurkeyMap<SalesCity>` and `useTurkeyMap<SalesCity>`. A custom city type should be paired with matching `data`; the root entry's built-in fallback only guarantees the base `CityType` fields.
+
 ## Types
 
 | Type                            | Description                                                                                                                  |
 | :------------------------------ | :--------------------------------------------------------------------------------------------------------------------------- |
-| `CityType`                      | `{ id: string, plateNumber: number, name: string, path: string, disabled?: boolean }`                                        |
+| `CityType`                      | `{ id: string, plateNumber: number, name: string, path: string, disabled?: boolean, region?: Region, centroid?: Centroid, neighbors?: string[], areaKm2?: number, population?: number, isoCode?: string, nutsCode?: string, altNames?: string[], meta?: Record<string, unknown> }` |
+| `Region`                        | `"marmara" \| "ege" \| "akdeniz" \| "ic-anadolu" \| "karadeniz" \| "dogu-anadolu" \| "guneydogu-anadolu"`                    |
+| `Centroid`                      | `{ x: number, y: number }` in the same SVG user-unit space as `path`                                                        |
 | `Data<TCity extends CityType = CityType>` | `{ cities: TCity[] }`                                                                                              |
 | `ViewBoxType`                   | `{ top: number, left: number, width: number, height: number }`                                                               |
 | `CustomStyleType`               | `{ idleColor: string, hoverColor: string, selectedColor?: string, selectedStroke?: string, selectedStrokeWidth?: number, disabledColor?: string, strokeColor?: string, strokeWidth?: number, focusStroke?: string, focusStrokeWidth?: number }` |
