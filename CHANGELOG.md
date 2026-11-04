@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [2.3.1](https://github.com/erdigokce/turkey-map-react/compare/v2.3.0...v2.3.1) (2026-11-04)
+
+### Bug Fixes
+
+* visual issue on city select and fix the bug with coloring. ([5668817](https://github.com/erdigokce/turkey-map-react/commit/5668817c6f6fbc1de08d3bfb03a00c4d2601efd9))
+
 ## [2.3.0](https://github.com/erdigokce/turkey-map-react/compare/v2.2.1...v2.3.0) (2026-11-03)
 
 ### Features
