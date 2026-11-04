@@ -70,7 +70,7 @@ import { cities } from 'turkey-map-react/data';
 const provinceNames = cities.map((city) => city.name);
 ```
 
-Bundle-size implications: the root entry includes the built-in dataset and is roughly 85 kB gzipped. The `core` entry is roughly 3 kB gzipped and contains no province paths, so its final size depends only on the data you pass. The `data` entry carries the dataset alone (roughly 81 kB gzipped) and can be imported without pulling in the component implementation or React. Using `turkey-map-react/core` with your own data is the smallest option when you do not need the built-in map.
+Bundle-size implications: the root entry includes the built-in dataset and is roughly 91 kB gzipped. The `core` entry is roughly 10 kB gzipped and contains no province paths, so its final size depends only on the data you pass. The `data` entry carries the dataset alone (roughly 81 kB gzipped) and can be imported without pulling in the component implementation or React. Using `turkey-map-react/core` with your own data is the smallest option when you do not need the built-in map.
 
 ## Events
 

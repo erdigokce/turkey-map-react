@@ -29,7 +29,7 @@ const getCityGroups = (container: HTMLElement) => (
 
 describe('published core bundle', () => {
   it('exports a renderable component', () => {
-    expect(typeof CoreTurkeyMap).toBe('function');
+    expect(['function', 'object']).toContain(typeof CoreTurkeyMap);
 
     const { container } = render(
       <CoreTurkeyMap data={{ cities: customCities }} />,

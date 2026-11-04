@@ -26,6 +26,20 @@ export type IsCityDisabledCallback = (city: CityType) => boolean;
 export type TooltipPosition = "cursor" | "city";
 export type RenderTooltipCallback = (city: CityType, value?: unknown) => ReactNode;
 
+export type Viewport = {
+  scale: number;
+  translateX: number;
+  translateY: number;
+};
+
+export type OnViewportChangeCallback = (viewport: Viewport) => void;
+
+export type TurkeyMapRef = {
+  focusCity: (cityId: string, zoom?: number) => void;
+  zoomTo: (scale: number) => void;
+  resetView: () => void;
+};
+
 export type ChoroplethValues = Record<string, number>;
 export type ColorScaleFunction = (value: number) => string;
 export type ColorScale = string[] | ColorScaleFunction;
@@ -90,6 +104,12 @@ export type TurkeyMapProps = {
   noDataColor?: string;
   getColor?: GetColorCallback;
   animateValues?: boolean;
+  zoomable?: boolean;
+  minZoom?: number;
+  maxZoom?: number;
+  zoomControls?: boolean;
+  viewport?: Viewport;
+  onViewportChange?: OnViewportChangeCallback;
   ariaLabel?: string;
   a11yFallback?: boolean;
 };

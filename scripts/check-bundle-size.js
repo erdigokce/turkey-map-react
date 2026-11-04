@@ -8,9 +8,11 @@ const zlib = require('node:zlib');
 // The data-free core entry has a hard product budget. The root entry includes
 // the built-in dataset, so it is only guarded against regressions.
 const CORE_BUDGET = 15 * 1024;
-// Measured root size at the time this budget was introduced: 86,493 bytes
-// gzipped. The extra headroom absorbs small zlib/minifier differences.
-const ROOT_BUDGET = 90 * 1024;
+// The root entry is dominated by the built-in 81-province dataset. Re-measured
+// after the zoom/pan feature: 93,186 bytes gzipped. The extra headroom absorbs
+// small zlib/minifier differences without masking dataset or core-entry growth,
+// which remain covered by the core budget above.
+const ROOT_BUDGET = 95 * 1024;
 
 const root = path.resolve(__dirname, '..');
 

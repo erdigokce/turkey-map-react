@@ -1,7 +1,7 @@
-import React from 'react';
+import React, { forwardRef } from 'react';
 import CoreTurkeyMap from './core';
 import { cities } from './data';
-import type { Data, TurkeyMapProps } from './types';
+import type { Data, TurkeyMapProps, TurkeyMapRef } from './types';
 
 export type {
   ChoroplethValues,
@@ -18,19 +18,24 @@ export type {
   OnMaxSelectionReachedCallback,
   OnSelectCallback,
   OnSelectionChangeCallback,
+  OnViewportChangeCallback,
   RenderTooltipCallback,
   ScaleType,
   SelectionMode,
   SelectionValue,
   TooltipPosition,
   TurkeyMapProps,
+  TurkeyMapRef,
   ViewBoxType,
+  Viewport,
 } from './types';
 
 const builtInData: Data = { cities };
 
-const TurkeyMap: React.FC<TurkeyMapProps> = (props) => (
-  <CoreTurkeyMap {...props} data={props.data ?? builtInData} />
-);
+const TurkeyMap = forwardRef<TurkeyMapRef, TurkeyMapProps>((props, ref) => (
+  <CoreTurkeyMap {...props} data={props.data ?? builtInData} ref={ref} />
+));
+
+TurkeyMap.displayName = 'TurkeyMap';
 
 export default TurkeyMap;

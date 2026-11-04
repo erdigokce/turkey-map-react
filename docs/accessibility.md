@@ -12,7 +12,7 @@ The province container (`<g id="turkiye">`) is a labeled `listbox` in `"single"`
 
 ## Keyboard navigation
 
-The whole map is a single tab stop. Tab enters the selected province when there is a selection, otherwise the first enabled province; every other province has `tabindex="-1"`. This also applies to `selectionMode="none"`, which is the one intentional keyboard behavior change in this release. Disabled provinces stay in the roving order so screen readers can announce them, but activation is inert.
+The provinces use one roving tab stop. Tab enters the selected province when there is a selection, otherwise the first enabled province; every other province has `tabindex="-1"`. This also applies to `selectionMode="none"`, which is the one intentional keyboard behavior change in the accessibility release. Disabled provinces stay in the roving order so screen readers can announce them, but activation is inert. When `zoomable` is enabled, the SVG viewport adds exactly one tab stop before the provinces, with its own accessible name and shortcuts.
 
 | Key                        | Action                                                                    |
 | :------------------------- | :------------------------------------------------------------------------ |
@@ -23,6 +23,19 @@ The whole map is a single tab stop. Tab enters the selected province when there 
 | `Escape`                   | Clear the selection without firing `onSelect`.                            |
 
 Navigation stops at the first and last province rather than wrapping. In controlled selection, Escape reports the clear through `onSelectionChange([])` and the parent remains responsible for updating the value.
+
+## Zoomable maps
+
+With `zoomable`, the SVG viewport is focusable and labeled with instructions containing the map name and its zoom/pan keys. Provider-supplied `svgProps` accessible names or `aria-labelledby` take precedence over the default description.
+
+| Key                         | Action                                      |
+| :-------------------------- | :------------------------------------------ |
+| `+` / `=`                   | Zoom in around the current center.          |
+| `-` / `_`                   | Zoom out around the current center.         |
+| Arrow keys                  | Pan by 10% of the viewBox in that direction. |
+| `0`                         | Reset to the minimum zoom, centered.        |
+
+These shortcuts run only when the SVG viewport itself has focus. Province keyboard navigation remains authoritative: arrows, Home/End, Enter/Space, Escape, live announcements, and disabled-province behavior are unchanged. Zoom-control buttons are native buttons with names, disabled states at the bounds, visible focus, and no effect on province selection.
 
 ## Live region
 
@@ -64,6 +77,7 @@ Set `a11yFallback` in a selection mode to render a visually hidden native `<sele
 
 ## Related
 
+- [Zoom and pan](./zoom-pan.md) — gestures, viewport state, controls, and the ref API.
 - [Styling and DOM ids](./styling.md) — focus ring colors and CSS custom properties.
 - [Custom data and cities](./custom-data.md#disabled-provinces) — disabled province behavior.
 - [API reference: styling and accessibility props](./api.md#styling-and-accessibility-props) — `ariaLabel` and `a11yFallback`.

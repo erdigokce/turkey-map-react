@@ -96,10 +96,15 @@ export const installPointerEvent = (): (() => void) => {
 
   class MockPointerEvent extends MouseEvent {
     pointerType: string;
+    pointerId: number;
+    isPrimary: boolean;
 
     constructor(type: string, init: PointerEventInit = {}) {
       super(type, init as MouseEventInit);
-      this.pointerType = (init as { pointerType?: string }).pointerType ?? 'mouse';
+      const pointerInit = init as { pointerType?: string; pointerId?: number; isPrimary?: boolean };
+      this.pointerType = pointerInit.pointerType ?? 'mouse';
+      this.pointerId = pointerInit.pointerId ?? 1;
+      this.isPrimary = pointerInit.isPrimary ?? true;
     }
   }
 

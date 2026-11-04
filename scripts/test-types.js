@@ -27,14 +27,20 @@ import TurkeyMap, {
   OnMaxSelectionReachedCallback,
   OnSelectCallback,
   OnSelectionChangeCallback,
+  OnViewportChangeCallback,
   RenderTooltipCallback,
   ScaleType,
   SelectionMode,
   SelectionValue,
   TooltipPosition,
+  TurkeyMapRef,
   ViewBoxType,
+  Viewport,
 } from 'turkey-map-react';
-import CoreTurkeyMap, { CityType as CoreCityType } from 'turkey-map-react/core';
+import CoreTurkeyMap, {
+  CityType as CoreCityType,
+  TurkeyMapRef as CoreTurkeyMapRef,
+} from 'turkey-map-react/core';
 import { cities } from 'turkey-map-react/data';
 
 const city: CityType = {
@@ -145,8 +151,16 @@ const cityWrapper = (element: React.ReactElement, wrappedCity: CityType) => (
   <g data-city={wrappedCity.id}>{element}</g>
 );
 
+const viewport: Viewport = { scale: 2, translateX: -100, translateY: -50 };
+const onViewportChange: OnViewportChangeCallback = (nextViewport) => (
+  console.log(nextViewport.scale, nextViewport.translateX, nextViewport.translateY)
+);
+const mapRef = React.createRef<TurkeyMapRef>();
+const coreMapRef = React.createRef<CoreTurkeyMapRef>();
+
 const App = () => (
   <TurkeyMap
+    ref={mapRef}
     data={data}
     viewBox={viewBox}
     customStyle={customStyle}
@@ -163,6 +177,12 @@ const App = () => (
     noDataColor="#eeeeee"
     getColor={getColor}
     animateValues={true}
+    zoomable={true}
+    minZoom={1}
+    maxZoom={8}
+    zoomControls={true}
+    viewport={viewport}
+    onViewportChange={onViewportChange}
     visible={true}
     hoverable={true}
     showTooltip={true}
@@ -245,7 +265,14 @@ const SingleArgumentTooltip = () => (
 
 const CoreApp = () => (
   <CoreTurkeyMap
+    ref={coreMapRef}
     data={data}
+    zoomable={true}
+    minZoom={1}
+    maxZoom={8}
+    zoomControls={true}
+    viewport={viewport}
+    onViewportChange={onViewportChange}
     selectionMode="multiple"
     selectedCities={selectedCityValues}
     showTooltip={true}
@@ -277,6 +304,32 @@ const ThresholdScale = () => (
   />
 );
 
+const RefApi = () => {
+  const rootRef = React.useRef<TurkeyMapRef>(null);
+  const coreRef = React.useRef<CoreTurkeyMapRef>(null);
+
+  return (
+    <>
+      <TurkeyMap ref={rootRef} data={data} zoomable={true} />
+      <CoreTurkeyMap ref={coreRef} data={data} zoomable={true} />
+      <button
+        type="button"
+        onClick={() => {
+          rootRef.current?.focusCity('alpha');
+          rootRef.current?.focusCity('alpha', 4);
+          rootRef.current?.zoomTo(2);
+          rootRef.current?.resetView();
+          coreRef.current?.focusCity('alpha');
+          coreRef.current?.zoomTo(2);
+          coreRef.current?.resetView();
+        }}
+      >
+        Zoom
+      </button>
+    </>
+  );
+};
+
 // @ts-expect-error the core entry requires a data prop
 const CoreWithoutData = () => <CoreTurkeyMap />;
 
@@ -288,6 +341,7 @@ export {
   CoreApp,
   CoreWithoutData,
   FunctionScale,
+  RefApi,
   SingleArgumentTooltip,
   ThresholdScale,
   UncontrolledMultiple,
